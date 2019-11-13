@@ -1,0 +1,120 @@
+@charset "UTF-8";
+.Title{
+	width: 100%;
+	font-size: 15pt;
+	font-weight: 800;
+	height: 100px;
+	display: table-cell;
+	vertical-align: middle;
+}
+.WriteTable{
+	width: 100%;
+	font-size: 18px;
+	border-spacing: 1; 
+ 	border-collapse: collapse; 
+}
+.WriteTable th{
+	background-color: #9dad360f;
+	width: 30%;
+	font-size: 19px;
+	text-align: center;
+}
+.WriteTable tr{
+	height: 60px;
+	border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.WriteTable tr:last-child{
+	border: none;
+}
+.WriteTable td{
+	padding-top: 7px;
+	padding-left: 20px;
+	padding-right: 20px;
+	background-color: #fff;
+}
+#introtitle{
+	resize: none; 
+	width: 70%;
+}
+.boardTable tbody td {
+   padding: 10px;
+   text-align: center;
+}
+.titleAnchor{
+	cursor: pointer;
+}
+.titleAnchor:hover{
+	font-weight: bold;
+}
+
+.pagingWrap{
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 50px;
+}
+.listicon{
+	max-width: 100%;
+	width:30px;
+}
+#makefund{
+	border: none;
+    width: 120px;
+    height: 35px;
+    border-radius: 0.5em;
+    font-size: 15px;
+    background-color: #6cbd62;
+    color: #fff;
+    cursor: pointer;
+}
+#search_title{
+	border: none;
+	border-bottom: 1px solid black;	
+}
+#searchBtn{
+	cursor: pointer;
+}
+.searchdiv{
+	float: right;
+}
+#end{
+	color: #e61a1a;
+}
+#ing{
+	color: #048cec;
+}
+.wtitle{
+	text-align: center;
+	padding-top: 35px;
+}
+.writeimg{
+	width:  80px;
+	height: 80px;
+	margin-bottom: 30px;
+}
+#poptr th{
+	background-color: #e89797c7;
+}
+
+#subBtn{
+	border: none;
+	width: 100px;
+    height: 38px;
+	border-radius: 0.5em;
+	font-size: 15px;
+	background-color: #000;
+	color: #fff;
+	cursor: pointer;
+}
+#fundMem_list{
+	text-align: right;
+    font-size: 11pt;
+    font-weight: 600;
+    color: gray;
+}
+#selected{
+	width: 175px;
+}
+.advericon{
+	width: 40px;
+    margin-right: 20px;
+}

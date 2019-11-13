@@ -1,0 +1,271 @@
+/* SEND/REV BOX WINDOW */
+select{
+	border-radius: 5px;
+    border: solid 1px #d6dade;
+    color: #808284;
+    padding: 2px;
+    padding-left: 10px;
+}
+
+.msg-container>#frm>.left-container{
+	float:left;
+}
+.msg-container>#frm>.right-container{
+	float:right;	
+	display:-webkit-inline-box;
+}
+
+.msg-container>#frm>.right-container>.searchbar>.imgBtn{
+	width: 50px;
+	height: 28px;
+	border-radius: 5px;
+	opacity: 0.7;
+	position: relative;
+    top: -4px;
+}
+input[type=text]{
+	border-radius: 5px;
+	border: solid 1px #d6dade;
+	padding-left: 10px;
+}
+textarea {
+	font-family: 나눔바른고딕;
+	border-radius: 5px;
+	border: solid 1px #d6dade;
+	padding-left: 10px;
+}
+
+.msg-container, .title-container{
+	vertical-align:middle;
+	
+}
+.container-icon{
+	width: auto;
+    height: 30px;
+    transform: translateX(10px);
+
+}
+
+.title-container>.imgBtn{
+	float:right;
+	width: 50px;
+	height: 28px;
+	border-radius: 5px;
+	opacity: 0.7;
+	position: relative;
+}
+.btn-container{
+	margin-top:10px;
+	vertical-align:middle;
+	float:right;	
+	display:-webkit-inline-box;
+}
+.btn-container>#writeBtn{
+	background-color: #393027;
+    color: white;
+    height: 40px;
+    width: 100px;
+    border: 0.5px solid #f1eeeb;
+    border-radius: 5px;
+}
+
+.btn-container>#deleteBtn{
+	background-color: #f1eeeb;
+	color:#393027;  
+	height: 40px;
+    width: 100px;
+	border: 0.2px solid #eae6e1;
+	border-radius: 5px;
+}
+
+/* WRITE MSG WINDOW */
+.check-section{
+	 width: 90%;
+    padding: 10px;
+    padding-bottom: 20px;
+    margin: 10px auto;
+    margin-left: 10px;
+    height: auto;
+    border-bottom: 1px solid #f1eeeb;
+    vertical-align: middle;
+    display: -webkit-inline-box;
+    border-top: 1px solid #f1eeeb;
+}
+.check-section img{
+	transform: translateY(10px);
+}
+
+#input-rev {
+    width: 275px;  /*20191011 수정  */
+    height: 24px;
+    padding-right: 48px;
+}
+textarea {
+    width: 390px;
+    height: 300px;
+}
+.contact-icon{
+    transform: translateX(-47px);
+    float: right;
+    width: 48px;
+    height: 27.5px;
+    border-radius: 5px;
+    opacity: 0.85;
+    position: fixed;
+}
+.input-area{
+	margin-top: 10px;
+    margin-left: 18px;
+    margin-right: 12px;
+}
+
+font{
+	font-family: 나눔바른고딕;
+	font: bold;
+}
+.new-btn-container{
+	margin-top:10px;
+	text-align: center;
+}
+.new-btn-container>#sendBtn{
+	background-color: #393027;
+    color: white;
+    height: 30px;
+    width: 80px;
+    border: 0.5px solid #f1eeeb;
+    border-radius: 5px;
+}
+
+.new-btn-container>#deleteBtn{
+	background-color: #393027;
+    color: white;
+    height: 30px;
+    width: 80px;
+    border: 0.5px solid #f1eeeb;
+    border-radius: 5px;
+  
+}
+
+.new-btn-container>#cancelBtn{
+	background-color: #f1eeeb;
+	color:#393027;  
+	height: 30px;
+    width: 80px;
+	border: 0.2px solid #eae6e1;
+	border-radius: 5px;
+
+}
+
+tr{
+	text-align:center;
+	min-height: 50px;
+}
+
+#pop-up-window{
+
+	}
+#pop-up-window-msg {
+    position: fixed;
+    cursor: default;
+    float: left;
+    overflow-y: auto;
+    z-index: 100;
+    width: 475px;
+}
+
+#pop-up-window-contact{
+	width: 580px;
+	height: max-content;
+    position: absolute;
+    left: 457px;
+	display:none;
+	border-left:1px solid #f1eeeb;
+	margin-top:-8px;
+}
+.flwimgBtn{
+    transform: translateY(8px);
+	width: 50px;
+	height: 28px;
+	border-radius: 5px;
+	opacity: 0.7;
+	position: relative;
+}
+.flw-header {
+    margin: 18px 25px 0px 25px;
+    width: 441px; /* 20191011 수정  */
+    text-align: center;
+}
+
+.flw-header>#following{
+	width:49.5%;
+	height:30px;
+	float:left;
+    padding-top: 22px;
+    padding-bottom: 11px;
+  	border-left: 1px solid rgb(241,238,235,0.6);
+    border-top: 1px solid rgb(241,238,235,0.6);
+ 
+	
+}
+.flw-header>#follower{
+    width: 49%;
+    height: 30px;
+    display: inline-block;
+    padding-top: 22px;
+    padding-bottom: 11px;
+    border-right: 1px solid rgb(241,238,235,0.6);
+    border-top: 1px solid rgb(241,238,235,0.6);
+}
+
+.input-flw {
+    width: 265px; /*  20191011 수정 */
+    height: 24px;
+    background: bottom;
+}
+
+.select-flw{
+	height:29px;
+	background: bottom;
+}
+#flw-search{
+	padding-top: 11px;
+	margin-left: 13px;
+    width: 420px;
+    margin-bottom:20px;
+}
+.flw-table {
+    width: 440px; /* 20191011 수정  */
+    border: 1px solid rgb(241,238,235,0.6);
+}
+
+.flw-img{
+	width: 50px;
+	height:50px;
+	margin-top: 5px;
+	margin-left: 5px;
+	-webkit-border-radius: 50%;
+}
+
+.flw-body {
+    margin-left: 25px;
+    width: 440px;/* 20191011 수정 */
+    min-height: 422px; /* 20191011 수정 */
+    background-color: rgb(241,238,235,0.6);
+}
+.addBtn{
+	background-color: #393027;
+    color: white;
+    height: 29px;
+    width: 55px;
+    border: 0.5px solid #f1eeeb;
+    border-radius: 5px;
+}
+
+.input-rev-result::-webkit-input-placeholder{
+	color:red;
+	font-weight: 700;
+}
+.content-result::-webkit-input-placeholder{
+	color:red;
+	font-weight: 600;
+}

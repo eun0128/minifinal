@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Qna">
+
+<insert id="qnawrite" parameterType="com.petmeeting.joy.store.model.QuestionDto">
+INSERT INTO PM_QUESTION(SEQ, PRODUCTCODE, EMAIL, CATEGORY, CONTENT, REGDATE)
+VALUES(PM_QUESTION_SEQ.NEXTVAL, #{productcode}, #{email}, #{category}, #{content}, SYSDATE)
+</insert>
+
+<!-- 상품의 문의 목록 불러오기 -->
+<select id="getQnalist" parameterType="com.petmeeting.joy.store.model.QnaParam" resultType="com.petmeeting.joy.store.model.QnaBean">
+SELECT Q_SEQ, PRODUCTCODE, EMAIL, NICKNAME, CATEGORY, Q_CONTENT, Q_REGDATE, A_SEQ, A_CONTENT, A_REGDATE
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY Q.REGDATE DESC) AS RNUM, Q.SEQ AS Q_SEQ, PRODUCTCODE, Q.EMAIL, NICKNAME, CATEGORY, Q.CONTENT AS Q_CONTENT, Q.REGDATE AS Q_REGDATE, A.SEQ AS A_SEQ, A.CONTENT AS A_CONTENT, A.REGDATE AS A_REGDATE
+FROM PM_QUESTION Q, PM_MEMBER M, PM_ANSWER A 
+WHERE Q.EMAIL = M.EMAIL AND Q.SEQ = QUESTION_SEQ AND PRODUCTCODE=#{productcode}
+	<if test="q_category == 'nickname'">
+	AND M.NICKNAME LIKE '%' || #{q_keyword} || '%'
+	</if>
+	<if test="q_category == 'content'">
+	AND Q.CONTENT LIKE '%' || #{q_keyword} || '%'
+	</if>
+	<if test="q_sorting == 'product'">
+	AND Q.CATEGORY = '상품'
+	</if>
+	<if test="q_sorting == 'delivery'">
+	AND Q.CATEGORY = '배송'
+	</if>
+	<if test="q_sorting == 'etc'">
+	AND Q.CATEGORY = '기타'
+	</if>
+	)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<!-- 상품 문의글 카운트 -->
+<select id="getQnaCount" parameterType="com.petmeeting.joy.store.model.QnaParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0)
+FROM PM_QUESTION Q, PM_MEMBER M, PM_ANSWER A
+WHERE Q.EMAIL = M.EMAIL AND Q.SEQ = QUESTION_SEQ AND PRODUCTCODE=#{productcode}
+	<if test="q_category == 'nickname'">
+	AND M.NICKNAME LIKE '%' || #{q_keyword} || '%'
+	</if>
+	<if test="q_category == 'content'">
+	AND Q.CONTENT LIKE '%' || #{q_keyword} || '%'
+	</if>
+	<if test="q_sorting == 'product'">
+	AND Q.CATEGORY = '상품'
+	</if>
+	<if test="q_sorting == 'delivery'">
+	AND Q.CATEGORY = '배송'
+	</if>
+	<if test="q_sorting == 'etc'">
+	AND Q.CATEGORY = '기타'
+	</if>
+</select>
+
+<!-- 전체 문의 목록 불러오기 -->
+<select id="getQnalistAll" parameterType="com.petmeeting.joy.store.model.QnaParam" resultType="com.petmeeting.joy.store.model.QnaBean">
+SELECT Q_SEQ, PRODUCTCODE, PRODUCTNAME, EMAIL, NICKNAME, CATEGORY, Q_CONTENT, Q_REGDATE, A_SEQ, A_CONTENT, A_REGDATE
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY B.REGDATE DESC) AS RNUM, B.SEQ AS Q_SEQ, PRODUCTCODE, PRODUCTNAME, EMAIL, NICKNAME, CATEGORY, 
+	B.CONTENT AS Q_CONTENT, B.REGDATE AS Q_REGDATE, A.SEQ AS A_SEQ, A.CONTENT AS A_CONTENT, A.REGDATE AS A_REGDATE
+FROM PM_ANSWER A
+RIGHT JOIN (SELECT Q.SEQ, Q.PRODUCTCODE AS PRODUCTCODE, PRODUCTNAME, Q.EMAIL AS EMAIL, NICKNAME, Q.CATEGORY AS CATEGORY, Q.CONTENT AS CONTENT, Q.REGDATE
+			FROM PM_QUESTION Q, PM_MEMBER M, PM_PRODUCT P
+			WHERE Q.EMAIL = M.EMAIL AND Q.PRODUCTCODE = P.PRODUCTCODE
+			<if test="q_category == 'productcode'">
+			AND Q.PRODUCTCODE LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'productname'">
+			AND P.PRODUCTNAME LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'nickname'">
+			AND M.NICKNAME LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'content'">
+			AND Q.CONTENT LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_sorting_category != null and q_sorting_category != ''">
+			AND Q.CATEGORY = #{q_sorting_category}
+			</if>) B
+ON A.QUESTION_SEQ = B.SEQ
+<if test="q_sorting_answer == 'wating'">
+WHERE A.SEQ IS NULL
+</if>
+<if test="q_sorting_answer == 'complete'">
+WHERE A.SEQ IS NOT NULL
+</if>)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<!-- 전체 문의목록 카운트 -->
+<select id="getQnaAllCount" parameterType="com.petmeeting.joy.store.model.QnaParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0)
+FROM PM_ANSWER A
+RIGHT JOIN (SELECT Q.SEQ, Q.PRODUCTCODE AS PRODUCTCODE, PRODUCTNAME, Q.EMAIL AS EMAIL, NICKNAME, Q.CATEGORY AS CATEGORY, Q.CONTENT AS CONTENT, Q.REGDATE
+			FROM PM_QUESTION Q, PM_MEMBER M, PM_PRODUCT P
+			WHERE Q.EMAIL = M.EMAIL AND Q.PRODUCTCODE = P.PRODUCTCODE
+			<if test="q_category == 'productcode'">
+			AND Q.PRODUCTCODE LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'productname'">
+			AND P.PRODUCTNAME LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'nickname'">
+			AND M.NICKNAME LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'content'">
+			AND Q.CONTENT LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_sorting_category != null and q_sorting_category != ''">
+			AND Q.CATEGORY = #{q_sorting_category}
+			</if>) B
+ON A.QUESTION_SEQ = B.SEQ
+<if test="q_sorting_answer == 'wating'">
+WHERE A.SEQ IS NULL
+</if>
+<if test="q_sorting_answer == 'complete'">
+WHERE A.SEQ IS NOT NULL
+</if>
+</select>
+
+<!-- 문의글 답변하기 -->
+<insert id="answerwrite" parameterType="com.petmeeting.joy.store.model.AnswerDto">
+INSERT INTO PM_ANSWER(SEQ, QUESTION_SEQ, CONTENT, REGDATE)
+VALUES(PM_ANSWER_SEQ.NEXTVAL, #{question_seq}, #{content}, SYSDATE)
+</insert>
+
+<!-- 최근 나의 문의글 목록 보기 5개 -->
+<select id="getMyqnalistLatest" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.QnaBean">
+SELECT Q_SEQ, PRODUCTNAME, CATEGORY, Q_CONTENT, Q_REGDATE, A_SEQ, A_CONTENT, A_REGDATE
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY B.REGDATE DESC) AS RNUM, B.SEQ AS Q_SEQ, PRODUCTNAME, CATEGORY, 
+	B.CONTENT AS Q_CONTENT, B.REGDATE AS Q_REGDATE, A.SEQ AS A_SEQ, A.CONTENT AS A_CONTENT, A.REGDATE AS A_REGDATE
+FROM PM_ANSWER A
+RIGHT JOIN (SELECT Q.SEQ, PRODUCTNAME, EMAIL, Q.CATEGORY AS CATEGORY, Q.CONTENT AS CONTENT, Q.REGDATE
+			FROM PM_QUESTION Q, PM_PRODUCT P
+			WHERE Q.PRODUCTCODE = P.PRODUCTCODE AND EMAIL=#{email}) B
+ON A.QUESTION_SEQ = B.SEQ)
+WHERE RNUM BETWEEN 1 AND 5
+</select>
+
+<!-- 나의 문의글 불러오기 -->
+<select id="getMyqnaList" parameterType="com.petmeeting.joy.store.model.QnaParam" resultType="com.petmeeting.joy.store.model.QnaBean">
+SELECT Q_SEQ, P_FILENAME, PRODUCTNAME, CATEGORY, Q_CONTENT, Q_REGDATE, A_SEQ, A_CONTENT, A_REGDATE
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY B.REGDATE DESC) AS RNUM, B.SEQ AS Q_SEQ, FILENAME AS P_FILENAME, PRODUCTNAME, CATEGORY, B.CONTENT AS Q_CONTENT, B.REGDATE AS Q_REGDATE, 
+	A.SEQ AS A_SEQ, A.CONTENT AS A_CONTENT, A.REGDATE AS A_REGDATE
+FROM PM_ANSWER A
+RIGHT JOIN (SELECT Q.SEQ, FILENAME, PRODUCTNAME, EMAIL, Q.CATEGORY AS CATEGORY, Q.CONTENT AS CONTENT, Q.REGDATE
+			FROM PM_QUESTION Q, PM_PRODUCT P
+			WHERE Q.PRODUCTCODE = P.PRODUCTCODE AND EMAIL=#{email}
+			<if test="q_category == 'productname'">
+			AND PRODUCTNAME LIKE '%' || #{q_keyword} || '%'
+			</if>
+			<if test="q_category == 'content'">
+			AND Q.CONTENT LIKE '%' || #{q_keyword} || '%'
+			</if>
+			) B
+ON A.QUESTION_SEQ = B.SEQ)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<!-- 나의 문의글 갯수 카운트 -->
+<select id="getMyqnaCount" parameterType="com.petmeeting.joy.store.model.QnaParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0)
+FROM PM_QUESTION Q, PM_PRODUCT P
+WHERE Q.PRODUCTCODE = P.PRODUCTCODE AND EMAIL=#{email}
+	<if test="q_category == 'productname'">
+	AND PRODUCTNAME LIKE '%' || #{q_keyword} || '%'
+	</if>
+	<if test="q_category == 'content'">
+	AND Q.CONTENT LIKE '%' || #{q_keyword} || '%'
+	</if>
+</select>
+
+<!-- 문의글 삭제 -->
+<delete id="deleteAnswer" parameterType="java.lang.Integer">
+DELETE FROM PM_ANSWER WHERE QUESTION_SEQ = #{seq}
+</delete>
+<delete id="deleteQuestion" parameterType="java.lang.Integer">
+DELETE FROM PM_QUESTION WHERE SEQ = #{seq}
+</delete>
+
+<!-- 답변 수정 -->
+<update id="updateAnswer" parameterType="com.petmeeting.joy.store.model.AnswerDto">
+UPDATE PM_ANSWER
+SET CONTENT=#{content}
+WHERE SEQ=#{seq}
+</update>
+
+<!-- 오늘의 문의수 -->
+<select id="getTodayQuestion" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_QUESTION 
+WHERE SUBSTR(REGDATE, 1, 9) = SUBSTR(SYSDATE, 1, 9)
+</select>
+
+</mapper>

@@ -1,0 +1,688 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+
+  <mapper namespace="Mypage" >
+  
+  <!-- 휴대폰으로 본인인증 후 auth를 바꿔주는 작업   -->  
+  <update id="mypagecertification" parameterType="com.petmeeting.joy.login.model.MemberDto">
+UPDATE PM_MEMBER SET AUTH='3'
+WHERE EMAIL=#{email} 
+  </update>
+  
+  
+  <!-- 나의 구독 리스트를 뽑기 위한 쿼리  -->
+  <!-- 1. 먼저 나의 팔로우 리스트를 뽑아낸다 -->
+  <select id="myFollolistemail" parameterType="com.petmeeting.joy.login.model.MemberDto"
+     resultType="com.petmeeting.joy.mypage.model.MypageFollowDto">
+  SELECT FOLLOING_EMAIL AS EMAIL FROM PM_FOLLOW WHERE MYEMAIL=#{email}
+  </select>
+  <!-- 2.내가 구독하는 사람의 닉네임을 알아내기 위해  검색 -->
+  <select id="myFollolistnickname"  parameterType="com.petmeeting.joy.mypage.model.MypageFollowDto"
+     resultType="com.petmeeting.joy.mypage.model.MypageFollowDto">
+  SELECT NICKNAME FROM PM_MEMBER WHERE EMAIL = #{email}
+  </select>
+
+ <!-- 몇명을 구독 하고 있는지 구하는 쿼리 -->
+ <select id="myFolloingcount" parameterType="String"
+ resultType="com.petmeeting.joy.mypage.model.MypageFollowDto" >
+ SELECT COUNT(*) AS FOLLOING FROM PM_FOLLOW WHERE MYEMAIL=#{email}
+ </select>
+ 
+ <!-- 몇명에게 구독을 당하는지 구하는 쿼리 -->
+ <select id="myFollowercount" parameterType="String"
+ resultType="com.petmeeting.joy.mypage.model.MypageFollowDto" >
+ SELECT COUNT(*) AS FOLLOWER FROM PM_FOLLOW WHERE FOLLOING_EMAIL=#{email}
+ </select>
+
+<!-- 내가 구독하는 사람의 프로필 사진을 갖고 오는 쿼리 -->
+ <select id="mypageprofileImg" parameterType="String"
+ resultType="com.petmeeting.joy.mypage.model.MypageFollowDto" >
+ SELECT MYPROFILE_IMG AS PICTURE  FROM PM_MYPROFILE
+ WHERE EMAIL=#{email}
+ </select>
+ 
+ <!-- 내가 구독하는 사람의 자기소개를 갖고 오는 쿼리 -->
+ <select id="mypageprofileintro" parameterType="String"
+ resultType="com.petmeeting.joy.mypage.model.MypageFollowDto" >
+ SELECT MYINTRO AS INTRO  FROM PM_MYPROFILE
+ WHERE EMAIL=#{email}
+ </select>
+
+
+<!--구독 취소를 눌렀을 때 구독 취소하는 쿼리 -->
+<delete id="mypagefollowdel"  parameterType="com.petmeeting.joy.mypage.model.MypageFollowDto">
+DELETE FROM PM_FOLLOW WHERE MYEMAIL= #{myemail} AND FOLLOING_EMAIL=#{folloing_email}
+</delete>
+
+
+<!--나의 팔로잉 팔로워 리스트 가져오는 쿼리 -->
+<select id="mypagefollowfollwinglist" parameterType="com.petmeeting.joy.mypage.model.MypageFollowDto" resultType="com.petmeeting.joy.mypage.model.MypageFollowDto">
+SELECT  MYEMAIL, FOLLOING_EMAIL FROM PM_FOLLOW WHERE 1=1 
+<if test="folloing_email != null and folloing_email != '' ">
+AND FOLLOING_EMAIL= #{folloing_email }
+</if>
+<if test=" myemail != null and   myemail != '' ">
+AND MYEMAIL= #{myemail}
+</if>
+
+</select>
+
+
+
+
+<!-- mypagefollow더보기 페이징 부분 -->
+
+<select id="mypagefollowmorelist" parameterType="com.petmeeting.joy.mypage.model.MypageFollowparam"
+resultType="com.petmeeting.joy.mypage.model.MypageFollowDto">
+SELECT FOLLOING_EMAIL AS EMAIL
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY SEQ DESC)AS RNUM, FOLLOING_EMAIL
+ FROM PM_FOLLOW 
+WHERE 1=1 AND MYEMAIL= #{myemail} 
+<if test="s_category !=null and s_category!='' 
+	 and s_keyword !=null and s_keyword !='' "  >
+AND FOLLOING_EMAIL LIKE '%'||#{s_keyword}||'%'
+</if>
+)
+</select>
+
+<!-- 회원 정보 수정 하였을 때의 쿼리 -->
+<update id="mypageInfoUpdateaf" parameterType="com.petmeeting.joy.login.model.MemberDto">
+UPDATE PM_MEMBER SET NAME=#{name}, NICKNAME=#{nickname}, POSTCODE=#{postcode}, ADDRESS=#{address}, address_detail=#{address_detail}, address_refer=#{address_refer},phone=#{phone} WHERE email=#{email}  
+</update>
+
+<!-- 비밀번호를 수정하였을때의 쿼리 -->
+<update id="mypagepasswordUpdateaf"  parameterType="com.petmeeting.joy.login.model.MemberDto" >
+UPDATE PM_MEMBER SET PWD=#{pwd} WHERE EMAIL=#{email}
+</update>
+
+
+<!-- 회원탈퇴를 하였을 때의 쿼리 -->
+<insert id="mypageMemberleave" parameterType="com.petmeeting.joy.mypage.model.MypageMemberleave">
+INSERT INTO PM_LEAVEMEMBER(EMAIL, REASON) VALUES (#{email},#{reason})
+</insert>
+
+
+<select id="mypageattendplay"  parameterType="com.petmeeting.joy.login.model.MemberDto" 
+resultType="com.petmeeting.joy.playboard.model.PlayboardDto">
+SELECT *FROM PM_PLAYBOARD WHERE SEQ IN 
+(SELECT PLAY_SEQ FROM PM_PLAYMEM WHERE email=#{email})
+</select>
+
+
+
+<!-- 강아지프로필과 사람 프로필 가져오는 sql -->
+<select id="mypageprofilememandpet"  parameterType="java.lang.String"
+ resultType="com.petmeeting.joy.mypage.model.Mypagememandpet" >
+SELECT MEM.EMAIL,MEM.MYPROFILE_IMG,MEM.MYAGE,MEM.MYSEX,MEM.MYINTRO,PET.PETPROFILE_IMG,PET.PETNAME,PET.PETAGE,PET.PETTYPE, PET.PETDETAIL,PET.PETWEIGHT,PET.PETSEX,PET.PETTNR,PET.PETINTRO FROM PM_MYPROFILE MEM ,PM_PETPROFILE PET 
+WHERE MEM.email=PET.email(+) AND MEM.email= #{email}
+</select>
+
+
+<!-- 쪽지 알람 웹푸시  -->
+<select id="mypagemsgpush" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT count(*) FROM PM_REVMSG WHERE to_EMAIL=#{email} AND READCHECK='0'
+</select>
+
+
+<!-- 쪽지관련 웹푸시 관련.. 누가 나한테 최근에 쪽지 보냈냐?? -->
+<select id="mypagemsgpushnewperson" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT  NICKNAME FROM PM_MEMBER WHERE EMAIL= 
+(SELECT from_email  FROM PM_REVMSG  WHERE READCHECK='0' AND to_EMAIL=#{email}
+ AND SENDDATE = (SELECT max(SENDDATE) FROM PM_REVMSG 
+WHERE to_EMAIL=#{email} 
+AND READCHECK='0' ))
+</select>
+
+<select id="mypagefundinglike" parameterType="com.petmeeting.joy.mypage.model.MypagemylikeDto"
+resultType="com.petmeeting.joy.funding.model.FundingDto">
+SELECT * FROM PM_FUNDINGBOARD WHERE SEQ IN
+(SELECT BOARD_SEQ FROM PM_BOARD_LIKE WHERE  BOARD_CODE='FUND' AND
+EMAIL= #{email})
+<if test="keyword != null and keyword !='' ">
+AND TITLE LIKE '%'||#{keyword}||'%' 
+</if>
+</select>
+
+
+<select id="mypageplayboardlike" parameterType="com.petmeeting.joy.mypage.model.MypagemylikeDto"
+resultType="com.petmeeting.joy.playboard.model.PlayboardDto">
+SELECT SEQ, BOARD_CODE, TITLE, CONTENT,
+FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY,
+PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, 
+REPORTCOUNT, PDATE, EDATE, REGDATE, DEL FROM PM_PLAYBOARD 
+WHERE SEQ IN (SELECT BOARD_SEQ FROM PM_BOARD_LIKE WHERE  BOARD_CODE='PLAY' AND
+EMAIL= #{email} )
+<if test="category != '모임 유형' and category != null and category !=''" > AND CATEGORY LIKE '%'||#{category}||'%' </if>
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '제목'"> AND TITLE LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '장소'">AND LOCATION LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(PDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+AND DEL=0
+ORDER BY PDATE DESC
+</select>
+
+
+<!-- 내가 좋아하는 자유게시판 글 -->
+<select id="mypagefreeboardlike" parameterType="com.petmeeting.joy.mypage.model.MypagemylikefreeboardDto"
+resultType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+SELECT * FROM PM_FREEBOARD WHERE SEQ IN
+(SELECT BOARD_SEQ FROM PM_BOARD_LIKE WHERE  BOARD_CODE !='FUND' AND BOARD_CODE !='PLAY' AND
+EMAIL= #{email})
+
+<if test="board_code == '강아지'">
+AND BOARD_CODE ='DOG'</if>
+<if test="board_code =='고양이'">
+AND BOARD_CODE LIKE '%CAT%'
+</if>
+<if test="board_code =='기타 소동물'">
+AND BOARD_CODE LIKE '%ETC%'
+</if>
+
+<if test="category != '분류 유형' and category != null and category !=''" > AND CATEGORY LIKE '%'||#{category}||'%'
+
+</if>
+<if test="selection != '선택' and selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '제목'"> AND TITLE LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '이메일'">AND EMAIL LIKE '%'||#{keyword}||'%' </if>
+</if>
+AND  DEL=0
+</select>
+
+
+<!-- 유정    ==========================================   -->
+<select id="checkMemberLeave" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT COUNT(*) FROM PM_LEAVEMEMBER WHERE EMAIL=#{email}
+</select>
+
+
+<!-- user정보 가져오기 -->
+<select id="getUser" parameterType="java.lang.String" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT EMAIL, PWD, NICKNAME, NAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH 
+FROM PM_MEMBER
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 로그인한 유저의 profile 가져오기 -->
+<select id="getLoginUserProfile" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MyProfileDto">
+SELECT EMAIL, MYPROFILE_IMG, MYAGE, MYSEX, MYINTRO
+FROM PM_MYPROFILE
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 로그인한 유저의 등급정보 가져오기 -->
+<select id="getUserGrade" parameterType="com.petmeeting.joy.login.model.MemberDto" resultType="com.petmeeting.joy.mypage.model.MyGradeDto">
+SELECT GRADE_NAME, FILENAME
+FROM PM_GRADE
+WHERE (SELECT TOTALPOINT FROM PM_MEMBER WHERE EMAIL=#{email}) BETWEEN MIN_POINT AND MAX_POINT
+</select>
+
+<!-- 로그인한 유저 프로필 등록 여부 체크 -->
+<select id="check_myprofile" parameterType="com.petmeeting.joy.login.model.MemberDto" resultType="java.lang.Integer">
+SELECT COUNT(*)
+FROM PM_CHECK_MYPROFILE
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 프로필 수정 -->
+<update id="updateProfile" parameterType="com.petmeeting.joy.mypage.model.MyProfileParam">
+UPDATE PM_MYPROFILE
+SET
+MYPROFILE_IMG=#{myprofile_img},
+MYAGE=#{myage },
+MYSEX=#{mysex},
+MYINTRO=#{myintro}
+WHERE EMAIL=#{email}
+</update>
+
+<!-- 닉네임 수정 -->
+<update id="updateNickname" parameterType="com.petmeeting.joy.mypage.model.MyProfileParam">
+UPDATE PM_MEMBER
+SET NICKNAME=#{nickname}
+WHERE EMAIL=#{email}
+</update>
+
+<!-- 프로필체크 테이블에 등록 -->
+<insert id="addMyProfileCheck" parameterType="java.lang.String">
+INSERT INTO PM_CHECK_MYPROFILE(EMAIL)
+VALUES(#{email})
+</insert>
+
+<!-- 프로필 등록 포인트추가 -->
+<update id="addProfilePoint" parameterType="java.lang.String">
+UPDATE PM_MEMBER
+SET 
+POINT= (SELECT POINT FROM PM_MEMBER WHERE EMAIL=#{email })+ 1000,
+TOTALPOINT= (SELECT TOTALPOINT FROM PM_MEMBER WHERE EMAIL=#{email })+ 1000
+WHERE EMAIL=#{email }
+</update>
+
+
+<!-- 펫프로필 등록 여부확인 -->
+<select id="check_petprofile" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT COUNT(*)
+FROM PM_CHECK_PETPROFILE
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 펫프로필체크 테이블에 등록 -->
+<insert id="addPetProfileCheck" parameterType="java.lang.String">
+INSERT INTO PM_CHECK_PETPROFILE(EMAIL)
+VALUES(#{email})
+</insert>
+
+<!-- 펫프로필 등록 -->
+<insert id="insertPetProfile" parameterType="com.petmeeting.joy.mypage.model.MyPetProfileDto">
+INSERT INTO PM_PETPROFILE(EMAIL, PETPROFILE_IMG, PETNAME, PETAGE, PETTYPE, PETDETAIL, PETWEIGHT, PETSEX, PETTNR, PETINTRO)
+VALUES(#{email},#{petprofile_img},#{petname},#{petage},#{pettype},#{petdetail},#{petweight},#{petsex},#{pettnr},#{petintro})
+</insert>
+
+<!-- 펫프로필 등록 포인트 추가 -->
+<update id="addPetProfilePoint" parameterType="java.lang.String">
+UPDATE PM_MEMBER
+SET 
+POINT= (SELECT POINT FROM PM_MEMBER WHERE EMAIL=#{email }) + 1000,
+TOTALPOINT= (SELECT TOTALPOINT FROM PM_MEMBER WHERE EMAIL=#{email }) + 1000
+WHERE EMAIL=#{email }
+</update>
+
+<!-- 펫프로필 수정 -->
+<update id="updatePetProfile" parameterType="com.petmeeting.joy.mypage.model.MyPetProfileDto">
+UPDATE PM_PETPROFILE
+SET
+EMAIL=#{email},
+PETPROFILE_IMG=#{petprofile_img},
+PETNAME=#{petname},
+PETAGE=#{petage},
+PETTYPE=#{pettype},
+PETDETAIL=#{petdetail},
+PETWEIGHT=#{petweight},
+PETSEX=#{petsex},
+PETTNR=#{pettnr},
+PETINTRO=#{petintro}
+WHERE EMAIL=#{email}
+</update>
+
+<!-- 펫프로필 가져오기 -->
+<select id="getLoginUserPetProfile" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MyPetProfileDto">
+SELECT EMAIL, PETPROFILE_IMG, PETNAME, PETAGE, PETTYPE, PETDETAIL, PETWEIGHT, PETSEX, PETTNR, PETINTRO
+FROM PM_PETPROFILE
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 프로필등록 포인트업데이트시  PM_POINT_HISTORY 등록  -->
+<insert id="addprofilePointHistory" parameterType="java.lang.String">
+INSERT INTO PM_POINT_HISTORY(EMAIL, USEDINFO, USEPOINT, RESULTPOINT, REGDATE, USEDTYPE) 
+VALUES(#{email }, '프로필 등록 지급포인트', 1000, (SELECT POINT FROM PM_MEMBER WHERE EMAIL=#{email }),SYSDATE, 0)
+</insert>
+
+<!-- 펫등록 포인트업데이트시  PM_POINT_HISTORY 등록  -->
+<insert id="addpetPointHistory" parameterType="java.lang.String">
+INSERT INTO PM_POINT_HISTORY(EMAIL, USEDINFO, USEPOINT, RESULTPOINT, REGDATE, USEDTYPE) 
+VALUES(#{email }, '펫 등록 지급포인트 ', 1000, (SELECT POINT FROM PM_MEMBER WHERE EMAIL=#{email }),SYSDATE, 0)
+</insert>
+
+<!-- 포인트내역 리스트 -->
+<select id="getPointHIstoryList" parameterType="com.petmeeting.joy.mypage.model.MypagePointListParam" resultType="com.petmeeting.joy.mypage.model.PointHistoryDto">
+SELECT RNUM, EMAIL, USEDINFO, USEPOINT, RESULTPOINT, REGDATE, USEDTYPE
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY REGDATE DESC) AS RNUM, EMAIL, USEDINFO, USEPOINT, RESULTPOINT, REGDATE, USEDTYPE
+		FROM PM_POINT_HISTORY
+			WHERE EMAIL=#{email }
+				ORDER BY REGDATE DESC)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<!-- 포인트 총 내역 -->
+<select id="getAllPointList" parameterType="com.petmeeting.joy.mypage.model.MypagePointListParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_POINT_HISTORY WHERE EMAIL=#{email}
+</select>
+
+
+
+
+<!-- 혜연 sql -->
+<!--==================== 나의 활동 ===================-->
+<select id="getJoinPlayList" parameterType="com.petmeeting.joy.mypage.model.MypageListParam" resultType="com.petmeeting.joy.playboard.model.PlayboardDto">
+SELECT SEQ, BOARD_CODE, TITLE, CONTENT,
+FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY,
+PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, 
+REPORTCOUNT, PDATE, EDATE, REGDATE, DEL FROM PM_PLAYBOARD 
+WHERE SEQ IN (SELECT PLAY_SEQ FROM PM_PLAYMEM WHERE email=#{email})
+<if test="category != '모임 유형' and category != null and category !=''" > AND CATEGORY LIKE '%'||#{category}||'%' </if>
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '제목'"> AND TITLE LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '장소'">AND LOCATION LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(PDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+AND DEL=0
+ORDER BY PDATE DESC
+</select>
+ 
+
+<select id="getMakePlayList"  parameterType="com.petmeeting.joy.mypage.model.MypageListParam" 
+resultType="com.petmeeting.joy.playboard.model.PlayboardDto">
+SELECT SEQ, BOARD_CODE, TITLE, CONTENT,
+FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY,
+PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, 
+REPORTCOUNT, PDATE, EDATE, REGDATE, DEL FROM PM_PLAYBOARD 
+WHERE EMAIL=#{email}
+<if test="category != '모임 유형' and category != null and category !=''" > AND CATEGORY LIKE '%'||#{category}||'%' </if>
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '제목'"> AND TITLE LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '장소'">AND LOCATION LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(PDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+AND DEL=0
+ORDER BY PDATE DESC
+</select>
+ 
+
+<select id="getMyFundingList" parameterType="com.petmeeting.joy.mypage.model.MypageListParam" resultType="com.petmeeting.joy.funding.model.FundingDto" >
+SELECT  a.*, b.DONATION
+FROM PM_FUNDINGBOARD a, (SELECT FUNDING_SEQ, DONATION FROM PM_FUNDINGMEM WHERE EMAIL=#{email}) b
+WHERE a.SEQ = b.FUNDING_SEQ
+<if test="keyword != null and keyword !='' ">
+AND a.TITLE LIKE '%'||#{keyword}||'%' 
+</if>
+</select>
+
+<select id="getMyPlayCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_PLAYBOARD
+WHERE EMAIL=#{email}
+AND DEL=0
+
+</select>
+
+<select id="getMyFreeCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_FREEBOARD
+WHERE EMAIL=#{email}
+AND DEL=0
+</select>
+
+<select id="getMyCommentCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_COMMENT
+WHERE EMAIL=#{email}
+AND DEL=0
+</select>
+
+<select id="getRecentFollowersPlayMake" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT p.MYPROFILE_IMG, m.NICKNAME, f.SEQ, f.EMAIL, f.BOARD_CODE, f.CATEGORY, f.TITLE, f.PDATE
+FROM PM_MYPROFILE p, PM_MEMBER	m,
+(SELECT * FROM PM_PLAYBOARD
+WHERE EMAIL IN 
+(SELECT FOLLOING_EMAIL FROM PM_FOLLOW
+WHERE MYEMAIL=#{email})
+AND REGDATE BETWEEN SYSDATE -7 AND SYSDATE) f
+WHERE m.EMAIL = p.EMAIL(+)
+AND f.EMAIL = m.EMAIL
+ORDER BY f.PDATE ASC
+</select>
+
+<select id="getRecentFollowersPlayJoin" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT p.MYPROFILE_IMG, m.NICKNAME,  f.SEQ, f.EMAIL, f.BOARD_CODE, f.CATEGORY, f.TITLE, f.PDATE
+FROM PM_MYPROFILE p, PM_MEMBER	m,
+(SELECT b.SEQ, b.CATEGORY, b.BOARD_CODE, b.TITLE, b.PDATE, m.EMAIL  FROM PM_PLAYBOARD b, PM_PLAYMEM m
+WHERE b.SEQ = m.PLAY_SEQ
+AND m.EMAIL IN (SELECT FOLLOING_EMAIL FROM PM_FOLLOW
+WHERE MYEMAIL=#{email})
+AND REGDATE BETWEEN SYSDATE -7 AND SYSDATE) f
+WHERE m.EMAIL = p.EMAIL(+)
+AND f.EMAIL = m.EMAIL
+ORDER BY f.PDATE ASC
+</select>
+
+<select id="getRecentFollowersFree" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT p.MYPROFILE_IMG, m.NICKNAME,  f.SEQ, f.EMAIL, f.BOARD_CODE, f.CATEGORY, f.TITLE, f.REGDATE
+FROM PM_MYPROFILE p, PM_MEMBER	m,
+(SELECT * FROM PM_FREEBOARD
+WHERE EMAIL IN 
+(SELECT FOLLOING_EMAIL FROM PM_FOLLOW
+WHERE MYEMAIL=#{email})
+AND REGDATE BETWEEN SYSDATE -7 AND SYSDATE) f
+WHERE m.EMAIL = p.EMAIL(+)
+AND f.EMAIL = m.EMAIL
+</select>
+
+<!--==================== 나의 쪽지함 ===================-->  
+
+<!-- 받은 쪽지함  -->  
+<select id="getRevMsgList" parameterType="com.petmeeting.joy.mypage.model.MypageMsgParam" resultType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+SELECT * FROM
+(SELECT m.NICKNAME, ROW_NUMBER()OVER(ORDER BY r.SENDDATE DESC) AS RNUM, r.*
+FROM PM_MEMBER m, (SELECT 
+SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK FROM PM_REVMSG
+WHERE TO_EMAIL=#{email} ORDER BY SENDDATE DESC) r
+WHERE m.EMAIL = r.FROM_EMAIL
+<if test="important != null and important !=''">
+<if test="important == '중요'">AND r.IMPORTANT=1</if>
+</if>
+<if test="readcheck != null and readcheck !=''">
+<if test="readcheck == '읽지않음'">AND r.READCHECK=0</if>
+</if>
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '보낸 사람'"> AND m.NICKNAME LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '내용'">AND r.CONTENT LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(r.SENDDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+) REV
+WHERE REV.RNUM BETWEEN #{start} AND #{end}
+
+</select>
+
+
+<select id="getAllRevMsg" parameterType="com.petmeeting.joy.mypage.model.MypageMsgParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_REVMSG
+WHERE 1=1
+<if test="important != null and important !=''">
+<if test="important == '중요'">AND IMPORTANT=1</if>
+</if>
+<if test="readcheck != null and readcheck !=''">
+<if test="readcheck == '읽지않음'">AND READCHECK=0</if>
+</if>
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '보낸 사람'">
+AND FROM_EMAIL IN (SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME LIKE '%'||#{keyword}||'%' )
+</if>
+<if test="selection == '내용'">AND CONTENT LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(SENDDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+AND TO_EMAIL=#{email}
+
+</select>
+
+<select id="getAllUnreadMsg" parameterType="com.petmeeting.joy.mypage.model.MypageMsgParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_REVMSG
+WHERE TO_EMAIL=#{email}
+AND READCHECK=0
+ORDER BY SENDDATE DESC
+</select>
+
+<select id="getRevMsgDetail" parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto" resultType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+SELECT m.NICKNAME, r.*
+FROM PM_MEMBER m, 
+(SELECT SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK
+FROM PM_REVMSG
+WHERE SEQ=#{seq}) r
+WHERE m.EMAIL = r.FROM_EMAIL
+</select>
+
+<select id="getSendMsgDetail" parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto" resultType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+SELECT m.NICKNAME, s.*
+FROM PM_MEMBER m, 
+(SELECT SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK
+FROM PM_SENDMSG
+WHERE SEQ=#{seq}) s
+WHERE m.EMAIL = s.TO_EMAIL
+</select>
+
+
+<delete id="deleteRevMsg"  parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto" >
+DELETE 
+FROM PM_REVMSG 
+WHERE SEQ = #{seq} 
+</delete>
+
+
+<!-- 보낸 쪽지함  -->  
+<select id="getSendMsgList" parameterType="com.petmeeting.joy.mypage.model.MypageMsgParam" resultType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+SELECT * FROM
+(SELECT m.NICKNAME, ROW_NUMBER()OVER(ORDER BY s.SENDDATE DESC) AS RNUM, s.*
+FROM PM_MEMBER m, (SELECT 
+SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK FROM PM_SENDMSG
+WHERE FROM_EMAIL=#{email} ORDER BY SENDDATE DESC) s
+WHERE m.EMAIL = s.TO_EMAIL
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '받는 사람'"> AND m.NICKNAME LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '내용'">AND s.CONTENT LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(s.SENDDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+) SEND
+WHERE SEND.RNUM BETWEEN #{start} AND #{end}
+</select>  
+
+
+<select id="getAllSendMsg" parameterType="com.petmeeting.joy.mypage.model.MypageMsgParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*),0) FROM PM_SENDMSG
+WHERE 1=1
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '받는 사람'">
+AND TO_EMAIL IN (SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME LIKE '%'||#{keyword}||'%' )
+</if>
+<if test="selection == '내용'">AND CONTENT LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '일시'">AND TO_CHAR(SENDDATE, 'YYYY-MM-DD') LIKE '%'||#{keyword}||'%' </if>
+</if>
+AND FROM_EMAIL=#{email}
+</select>
+
+
+<delete id="deleteSendMsg"  parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto" >
+DELETE 
+FROM PM_SENDMSG 
+WHERE SEQ = #{seq} 
+</delete>
+
+ 
+<!-- 새로운 글쓰는 부분 -->
+<insert id="writeNewMsg" parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+
+INSERT ALL
+INTO PM_REVMSG(SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK)
+VALUES(PM_REVMSG_SEQ.NEXTVAL,  (SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME = #{nickname}), #{from_email}, #{content},  SYSDATE, null, #{important}, #{readcheck})
+
+INTO PM_SENDMSG(SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK)
+VALUES(PM_SENDMSG_SEQ.NEXTVAL, (SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME = #{nickname}), #{from_email}, #{content}, SYSDATE, null, #{important}, #{readcheck})
+SELECT (SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME = #{nickname}), #{from_email}, #{content}, SYSDATE, null, #{important}, #{readcheck} FROM DUAL
+
+</insert>
+
+
+
+<insert id="writeNewMultiMsgs1" parameterType="java.util.List">
+INSERT INTO PM_REVMSG(SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK)   
+SELECT PM_REVMSG_SEQ.NEXTVAL, A.* FROM(
+<foreach collection="list" item="multi" separator="UNION ALL">
+SELECT
+(SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME = #{multi.nickname}) AS TO_EMAIL, #{multi.from_email}, #{multi.content}, SYSDATE, NULL, #{multi.important}, 0
+
+FROM DUAL
+</foreach>
+) A
+</insert>
+
+<insert id="writeNewMultiMsgs2" parameterType="java.util.List">
+INSERT INTO PM_SENDMSG(SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK)   
+SELECT PM_SENDMSG_SEQ.NEXTVAL, A.* FROM(
+<foreach collection="list" item="multi" separator="UNION ALL">
+SELECT
+(SELECT EMAIL FROM PM_MEMBER WHERE NICKNAME = #{multi.nickname}) AS TO_EMAIL, #{multi.from_email}, #{multi.content}, SYSDATE, NULL, #{multi.important}, 0
+FROM DUAL
+</foreach>
+) A
+</insert>
+
+<update id="changeReadcheck1" parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+UPDATE PM_REVMSG
+<if test="readcheck == 0">
+SET READCHECK=1, READDATE=SYSDATE
+</if>
+<if test="readcheck == 1">
+SET READCHECK=0, READDATE=null
+</if>
+WHERE SEQ=#{seq}
+</update>
+
+<update id="changeReadcheck2" parameterType="com.petmeeting.joy.mypage.model.MypageMsgDto">
+UPDATE PM_SENDMSG
+<if test="readcheck == 0">
+SET READCHECK=1, READDATE=SYSDATE
+</if>
+<if test="readcheck == 1">
+SET READCHECK=0, READDATE=null
+</if>
+WHERE SEQ=#{seq} 
+</update> 
+
+
+<select id="myFollowerCount" parameterType="com.petmeeting.joy.mypage.model.MypageFollowListParam" resultType="java.lang.Integer">
+SELECT COUNT(*) AS FOLLOWER 
+FROM PM_FOLLOW 
+WHERE FOLLOING_EMAIL=#{email}
+</select>
+
+<select id="myFollowingCount" parameterType="com.petmeeting.joy.mypage.model.MypageFollowListParam" resultType="java.lang.Integer">
+SELECT COUNT(*) AS FOLLOWING 
+FROM PM_FOLLOW 
+WHERE MYEMAIL=#{email}
+</select>
+
+<select id="myFollowerInfoList" parameterType="com.petmeeting.joy.mypage.model.MypageFollowListParam" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT f.SEQ, p.MYPROFILE_IMG, m.NICKNAME, f.MYEMAIL
+FROM PM_FOLLOW f, PM_MYPROFILE p, PM_MEMBER	m
+WHERE m.EMAIL = p.EMAIL(+)
+AND f.MYEMAIL = m.EMAIL
+AND f.FOLLOING_EMAIL = #{email}
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '닉네임'"> AND m.NICKNAME LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '이메일'"> AND m.EMAIL LIKE '%'||#{keyword}||'%' </if>
+</if>
+</select>
+
+<select id="myFollowingInfoList" parameterType="com.petmeeting.joy.mypage.model.MypageFollowListParam" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT f.SEQ, p.MYPROFILE_IMG, m.NICKNAME, f.FOLLOING_EMAIL
+FROM PM_FOLLOW f, PM_MYPROFILE p, PM_MEMBER	m
+WHERE m.EMAIL = p.EMAIL(+)
+AND f.FOLLOING_EMAIL = m.EMAIL
+AND f.MYEMAIL = #{email}
+<if test="selection != null and selection !='' and keyword != null and keyword !='' ">
+<if test="selection == '닉네임'"> AND m.NICKNAME LIKE '%'||#{keyword}||'%' </if>
+<if test="selection == '이메일'"> AND m.EMAIL LIKE '%'||#{keyword}||'%' </if>
+</if>
+</select>
+
+<select id="getFlwerEmail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT EMAIL, NICKNAME
+FROM PM_MEMBER
+WHERE EMAIL = (SELECT MYEMAIL FROM PM_FOLLOW WHERE SEQ=#{seq})
+</select>
+
+
+<select id="getFlwingEmail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.mypage.model.MypageFollowListParam">
+SELECT EMAIL, NICKNAME
+FROM PM_MEMBER
+WHERE EMAIL = (SELECT FOLLOING_EMAIL FROM PM_FOLLOW WHERE SEQ=#{seq})
+</select>
+
+<select id="checkNicknameExist" parameterType="java.lang.String" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT * FROM PM_MEMBER
+WHERE NICKNAME = #{nickname}
+</select>
+
+
+
+
+<!-- 혜연 sql end -->
+  </mapper>

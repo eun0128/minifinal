@@ -1,0 +1,270 @@
+#mypageFollow>.main>.mypageMain{
+	margin-left:600px;
+	margin-right:130px;
+	width:auto;
+	margin-top:-700px;
+}
+
+
+
+
+
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.btn_cancel{
+	
+  font-family: 'NanumBarunGothic', sans-serif;
+  border:dotted 0px white; 
+  background:#585e7d;
+  color:#fff;    
+  border-radius:7px 7px 7px 7px;  
+  width:115px; height:34px;   
+  font-size: 15px;
+}
+
+.btn_order{ 
+
+  font-family: 'NanumBarunGothic', sans-serif;
+  border:dotted 0px white; 
+  background:#585e7d;
+  color:#fff;    
+  border-radius:7px 7px 7px 7px;  
+  width:115px; height:34px;   
+  font-size: 15px;
+}
+
+
+
+
+#progressbar {
+	margin-bottom: 0px;
+	overflow: hidden;
+	/*CSS counters to number the steps*/
+	counter-reset: step;
+	margin-left:200px;
+	margin-top:50px;
+}
+#progressbar li {
+	list-style-type: none;
+	color: white;
+	text-transform: uppercase;
+	font-size: 9px;
+	width: 21.33%;
+	float: left;
+	position: relative;
+}
+#progressbar li:before {
+	content: counter(step);
+	counter-increment: step;
+	width: 20px;
+	line-height: 20px;
+	display: block;
+	font-size: 10px;
+	color: #333;
+	background: white;
+	border-radius: 3px;
+	margin: 0 auto 5px auto;
+}
+/*progressbar connectors*/
+#progressbar li:after {
+	content: '';
+	width: 100%;
+	height: 2px;
+	background: white;
+	position: absolute;
+	left: -50%;
+	top: 9px;
+	z-index: -1; /*put it behind the numbers*/
+}
+#progressbar li:first-child:after {
+	/*connector not needed before the first step*/
+	content: none; 
+}
+/*marking active/completed steps green*/
+/*The number of the step and the connector before it = green*/
+#progressbar li.active:before,  #progressbar li.active:after{
+	background: #585e7d;
+	color: white;
+}
+
+
+.step2 {
+	background:#c2d7e1;
+	border:solid;1px;
+	border-color:#585e7d;
+	border-radius: 3px;
+	padding: 20px 30px;
+	width: 24%;
+	margin: 0 10%;
+	height:200px;
+	/*stacking fieldsets above each other*/
+    margin-top:50px;
+    margin-left:350px;
+    margin-bottom:100px;
+}
+
+#msform fieldset.step2 input{
+   width:80%;
+   margin-left:0px;
+   height:30px;
+}
+
+#msform fieldset.step2 span{
+	background: #585e7d;
+    display:inline-block;
+    width:120px;
+    color:white;
+	
+}
+
+#msform .action-button2 {
+	width: 100px;
+	background: #585e7d;
+	font-weight: bold;
+	color: white;
+	border: 0 none;
+	border-radius: 1px;
+	cursor: pointer;
+	padding: 0px 5px;
+	margin: 10px 5px;
+}
+#msform fieldset.step2 input, #msform textarea {
+	padding: 15px;
+	border: 1px solid #585e7d;
+	border-radius: 3px;
+	margin-bottom: 10px;
+	width: 87%;
+	box-sizing: border-box;
+	font-family: montserrat;
+	color: #2C3E50;
+	font-size: 13px;
+}
+
+#msform fieldset.step2 .action-button {
+	width: 108px;
+	background: #585e7d;
+	font-weight: bold;
+	color: white;
+	border: 0 none;
+	border-radius: 1px;
+	padding: 1px 16px;
+	margin-top:70px;
+	left:500px;
+
+}
+#msform .action-button:hover, #msform .action-button:focus {
+	box-shadow: 0 0 0 2px white, 0 0 0 3px #27AE60;
+}
+
+.step2 .fs-title  {
+	font-size: 15px;
+	text-transform: uppercase;
+	color: #2C3E50;
+	margin-bottom: 10px;
+}
+.step2 .fs-subtitle {
+	font-weight: normal;
+	font-size: 13px;
+	color: #666;
+	margin-bottom: 20px;
+}
+
+.step3{
+	margin-top:-30px;
+}
+
+.step3 .fs-title {
+border:solid;
+color:#585e7d;
+margin-top:40px;
+}
+.step2 .fs-subtitle {
+	font-weight: normal;
+	font-size: 13px;
+	color: #666;
+	margin-bottom: 20px;
+}
+
+.step2 .fs-subtitle {
+	font-weight: normal;
+	font-size: 13px;
+	color: #666;
+	margin-bottom: 20px;
+}
+
+.step3 .fs-subtitle {
+    margin-top:10px;
+    font-size:17px;
+	color: #999999;
+	margin-bottom: 20px;
+}
+
+.step3 .fs-subtitle2 {
+    font-size:12px;
+	color: #585e7d;
+	margin-bottom: 20px;
+}
+
+.step3 img{
+	width:20px;
+}
+.step3 .fs-title2 {
+border:solid 1px;
+color:#dee2e6;
+padding:30px;
+margin-top:30px;
+
+}
+
+
+
+.step3 .fs-subtitle a{
+    font-size:12px;
+	color: #5d5248;
+	margin-bottom: 20px;
+	font:bolder;
+	 text-decoration: underline;
+}
+
+.step3 #fs-subtitle2 {
+    font-size:12px;
+	color: #585e7d;
+	margin-bottom: 20px;
+}
+
+.step3 .fs-subtitle4 {
+    font-size:18px;
+	color: #999999;
+	margin-bottom: 20px;
+	margin-top:30px;
+}
+
+
+.container ul{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+
+.container ul li{
+  color: #0c1f2f;
+}
+
+
+.step4 .fs-title {
+border:solid;
+color:#585e7d;
+margin-top:60px;
+}

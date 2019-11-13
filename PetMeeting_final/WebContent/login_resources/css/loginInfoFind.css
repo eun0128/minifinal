@@ -1,0 +1,127 @@
+@charset "UTF-8";
+
+
+/* @font-face {
+font-family: 'NanumSquareRound'; 
+src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff'); 
+font-weight: normal; 
+font-style: normal; 
+}
+body{
+	font-family: 'NanumSquareRound'!important; 
+	src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff'); 
+	font-weight: normal; 
+	font-style: normal; 
+	margin: 0;
+}
+h1, h2, h3, h4, h5, h6, a, span, button, input {
+	font-family: 'NanumSquareRound'!important; 
+}
+ */
+body{
+	font-family: monospace;
+	margin: 0;
+}
+
+.emailfind{
+	width: 100%;
+}
+.emailfind_title {
+	height: 80px;
+	overflow: auto;
+	padding: 0 20px 0 20px;
+}
+
+.emailfind_main {
+    height: auto;
+    overflow: auto;
+    padding: 20px;
+    margin: 0;
+}
+.label_pwd{
+    width: 100px;
+    height: auto;
+    background-color: #f9f9f9;
+    text-align: center;
+    padding: 10px 0 10px 0;
+    display: inline-block;
+}
+.label_email{
+    width: 100px;
+    height: auto;
+    background-color: #f9f9f9;
+    text-align: center;
+    padding: 10px 0 10px 0;
+    float: left;
+}
+.label_text {
+    font-weight: bold;
+    color: #999;
+}
+.label_text:hover {
+	color: #000;
+}
+.emailfind_box1{
+	height: 250px;
+    margin: 0;
+    padding: 20px;
+    background-color: #eee;
+}
+.emailfind_box2{
+	height: 200px;
+	margin: 0;
+	margin-top: 30px;
+	padding: 20px;
+    background-color: #eee;
+    
+}
+
+.emailfind_tb {
+	width: 100%;
+    float: left;
+	margin-top: 30px;
+}
+
+.emailfind_tb th{
+	text-align: left;
+	color: #505050;
+}
+
+.emailfind_tb td>input{
+    height: 20px;
+    width: 95%;
+}
+
+.emailfind_emailAuth_Btn {
+    height: 25px;
+    width: 80%;
+    background-color: #fff;
+    border: 1px solid #a9a9a9;
+    padding: 0;
+}
+
+.pwdCheckMsg {
+    line-height: 44px;
+    border: 0;
+    border-bottom: 1px solid #eee;
+    width: 30%;
+    font-size: 12px;
+    font-weight: bold;
+    float: right;
+    text-align: left;
+    background-color: #eee;
+}
+
+.nextBtn {
+    color: #eee;
+    margin-top: 10px;
+    float: right;
+    background-color: #424242;
+    border-radius: 26px;
+    padding: 10px;
+    font-weight: 800;
+}
+
+.nextBtn:hover {
+	cursor: pointer;
+}

@@ -1,0 +1,164 @@
+
+#_btnlist{
+border-radius: 8px;
+width:80px;
+height:30px;
+color:white;
+font-family:NanumSquareRound;
+font-size: 15px;
+
+}
+#__btnSearch{
+border-radius: 8px;
+width:80px;
+height:30px;
+color:white;
+font-family:NanumSquareRound;
+font-size: 15px;
+	
+}
+
+#boardtitle{
+border-radius: 8px;
+width:300px;
+height:50px;
+color:white;
+font-family:NanumSquareRound;
+font-size: 30px;
+
+}
+
+.profilephoto{
+	width: 80px; height: 80px;
+   	object-fit: cover;
+    border-radius: 50%;
+    margin-right: 50px; 
+    float:center;
+    }
+    
+.grade-icon{
+	width:23px;
+	height:23px;
+}
+.th1{	width:150px;}
+.th2{	width:800px;}    /* style="word-break:break-all" */
+.th3{	width:400px;}
+.th4{	width:120px;}
+.th5{	width:90px;}
+.th6{	width:90px;}
+.th7{	width:90px;}
+.th8{	width:90px;}
+.th9{	width:90px;}
+.tt1{ width: 100px;}
+.tt2{ width: 100px;}
+.tt3{ width: 300px;}
+.tt4{ width: 100px;}
+.qqq{fontsize:x-large;}
+.cmlike{display:inline}
+.likeke{display:inline}
+
+.fb1{	width:100px;}
+.fb2{	width:100px; style="word-break:break-all"}
+.fb3{	width:750px;}
+.fb4{	width:200px;}
+.fb5{	width:130px;}
+.fb6{	width:100px;}
+.fb7{	width:100px;}
+.fbtitle{display:inline;}
+
+
+
+select {
+	border: 0px;
+	border-radius: 10px;
+	padding-left: 3px;
+	font-family:NanumSquareRound;
+	background-color: #EAEAEA;
+	height:30px;
+	
+}
+
+button {
+	border-radius: 8px;
+	width:65px;
+	color:white;
+	font-family: NanumSquareRound;
+}
+#_writebtn{
+	margin:20px 0;
+	border-radius: 8px;
+	width:155px;
+	height:50px;
+	color:white;
+	font-family:NanumSquareRound;
+	font-size: 30px;
+	float: right;
+	z-index:1;
+	display:inline-block;
+	
+}
+input{
+	border-radius: 3px;
+	border: 0px solid;
+	border-bottom: 1px solid grey;
+	width: 250px;
+	font-family:NanumSquareRound;
+}
+#contentheight{
+	min-height : 1000px;
+	
+}
+#_writebtn{
+    width: 200px;
+    height: 45px;
+    border-radius: 3em;
+    background-color: #e0d9d2;
+    outline: none;
+    color: #715c54;
+    font-weight: 600;
+    border: none;
+    font-size: 20px;
+    transition: 0.3s;
+}
+
+
+
+.mainTitle{
+   border-bottom: 1px solid #f4f4f4;
+    padding-top: 70px;
+    padding-bottom: 50px;
+
+}
+#mainTitle-petmeeting{
+   font-size: 13px;
+   display: block;
+   padding-bottom: 15px;
+}
+#mainTitle-boardname{
+   font-size: 37px;
+   display: block;
+   padding-bottom: 20px;
+   font-weight: bold;
+}
+#mainTitle-info{
+   font-size: 15px;
+   display: block;
+}
+   
+#reportBtn{
+	position: relative;
+	top:-5px;
+	height: 23px;
+	width:23px;
+	transform:translateX(-20px);
+}
+
+#_frmFormSearch>.container .right-side{
+	display:-webkit-inline-box;
+	float:right;
+}
+#soltingForm>.sort-container{
+	float:left;
+}
+.container .searchbar{
+}

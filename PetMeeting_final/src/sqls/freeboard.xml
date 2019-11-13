@@ -1,0 +1,784 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+
+<mapper namespace="freeboard">
+<insert id="fbwritedown" parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+INSERT INTO PM_FREEBOARD(BOARD_CODE, SEQ, EMAIL, CATEGORY, TITLE, CONTENT, READCOUNT, LIKECOUNT, REPORTCOUNT, REGDATE, DEL)
+VALUES(#{board_code}, PM_FREEBOARD_SEQ.NEXTVAL, #{email},#{category},#{title},#{content},0,0,0,sysdate,0)
+</insert>
+
+<select id="fblistview" resultType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+SELECT b.NICKNAME, a.BOARD_CODE, a.SEQ, a.EMAIL, a.CATEGORY, a.TITLE, a.CONTENT, a.READCOUNT, a.LIKECOUNT, a.REPORTCOUNT, a.REGDATE, a.DEL 
+FROM PM_FREEBOARD a INNER JOIN PM_MEMBER b
+		ON a.EMAIL = b.EMAIL
+</select>
+
+
+<select id="getdetail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+SELECT F.BOARD_CODE,
+	   F.SEQ,	   
+	   F.EMAIL,	   
+	   F.CATEGORY,
+	   F.TITLE,
+	   F.CONTENT,
+	   F.READCOUNT,
+	   F.LIKECOUNT,
+	   F.REPORTCOUNT,
+	   F.REGDATE,
+	   F.DEL,
+	   F.NICKNAME,
+	   F.MYPROFILE_IMG, 
+	   F.GRADE_NAME,
+	   F.FILENAME
+	   
+FROM(SELECT a.BOARD_CODE,
+		    a.SEQ,
+		    a.EMAIL,
+		    a.CATEGORY,
+		    a.TITLE,
+		    a.CONTENT,
+		    a.READCOUNT,
+		    a.LIKECOUNT,
+		    a.REPORTCOUNT,
+		    a.REGDATE,
+		    a.DEL,
+		    b.NICKNAME,
+		    c.MYPROFILE_IMG,
+		    b.TOTALPOINT,
+		    (SELECT d.GRADE_NAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS GRADE_NAME,
+		    (SELECT d.FILENAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS FILENAME
+     FROM PM_FREEBOARD a 
+	 	INNER JOIN PM_MEMBER b
+			ON a.EMAIL = b.EMAIL
+	 	LEFT OUTER JOIN PM_MYPROFILE c
+			ON a.EMAIL = c.EMAIL )F			
+WHERE F.SEQ = #{seq}
+</select> 
+
+<update id="fbupdate" parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto" >
+	UPDATE PM_FREEBOARD SET
+	CATEGORY =#{category},
+	TITLE =#{title},
+	CONTENT =#{content}
+	WHERE SEQ=#{seq}
+</update>
+
+<update id="fbdelete" parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto" >
+	UPDATE PM_FREEBOARD SET
+	DEL = 1
+	WHERE SEQ=#{seq}
+</update>
+
+<select id="getfbCount" parameterType="com.petmeeting.joy.freeboard.model.FbParam" 
+	resultType="java.lang.Integer">
+
+	SELECT NVL(COUNT(*), 0) AS CNT
+	FROM (SELECT * FROM (SELECT 					a.board_code,
+													a.seq,
+													a.email,
+													a.category,
+													a.title,
+													a.content,
+													a.readcount,
+													a.likecount,
+													a.reportcount,
+													a.regdate,
+													a.del,
+													b.nickname
+													FROM PM_FREEBOARD a 
+													INNER JOIN PM_MEMBER b 
+													ON a.EMAIL = b.EMAIL
+													WHERE a.del = 0)
+	
+	
+	 WHERE DEL=0) 
+	<if test="category != null and category != ''">
+			 	<if test="category == 'free'">
+			 		WHERE CATEGORY LIKE '잡담'
+			 	</if>
+			 	<if test="category == 'search'">
+			 		WHERE CATEGORY LIKE '찾아요'
+			 	</if>
+			 	<if test="category == 'infor'">
+			 		WHERE CATEGORY LIKE '정보'
+			 	</if>
+			 	<if test="category == 'qna'">
+			 		WHERE CATEGORY LIKE '질문'
+			 	</if>
+			 	<if test="category == 'boast'">
+			 		WHERE CATEGORY LIKE '자랑'
+			 	</if>
+		 	 </if> 
+		 	  <if test="category == null or category == ''">	
+					 WHERE 1=1		
+			</if>
+	<if test="s_category != null and s_category != ''
+	  	and s_keyword != null and s_keyword != ''">		  	
+	  	<if test="s_category == 'title'">
+	  		AND TITLE LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  	<if test="s_category == 'content'">
+	  		AND CONTENT LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  	<if test="s_category == 'email'">
+	  		AND email LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  	<if test="s_category == 'nickname'">
+	  		AND nickname LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  			  
+	 </if>
+	 
+			 <if test="board_code == 'DOG'">
+		  		AND BOARD_CODE = 'DOG'
+		  	 </if>
+			 <if test="board_code == 'CAT'">
+		  		AND BOARD_CODE = 'CAT'
+		  	 </if>
+		  	 <if test="board_code == 'ETC'">
+		  		AND BOARD_CODE = 'ETC'
+		  	 </if>
+	 
+	 
+</select>
+
+<select id="getfbList" parameterType="com.petmeeting.joy.freeboard.model.FbParam" resultType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+	
+	SELECT F.BOARD_CODE,
+		   F.SEQ,	   
+		   F.EMAIL,	   
+		   F.CATEGORY,
+		   F.REGDATE,
+		   F.TITLE,
+		   F.CONTENT,
+		   F.READCOUNT,
+		   F.LIKECOUNT,
+		   F.REPORTCOUNT,	   
+		   F.DEL,
+		   F.NICKNAME,
+		   <!-- F.MYPROFILE_IMG,  -->
+		   F.GRADE_NAME,
+		   F.FILENAME,
+		   F.COUNTREPLY,
+		   F.RNUM
+	  
+	 FROM (SELECT ROW_NUMBER()OVER(ORDER BY
+			
+			<if test="sorting != null and sorting != ''">
+			 	<if test="sorting == 'old'">
+			 		a.REGDATE ASC
+			 	</if>
+			 	<if test="sorting == 'like'">
+			 		a.LIKECOUNT DESC
+			 	</if>
+			 	<if test="sorting == 'read'">
+			 		a.READCOUNT DESC
+			 	</if>
+		 	 </if> 
+		 	 <if test="sorting == null or sorting == ''">	
+					 a.REGDATE DESC		
+			</if>
+		
+				 ) AS RNUM,
+				  	  a.REGDATE,
+				  	  a.BOARD_CODE,
+				  	  a.SEQ,
+				  	  a.EMAIL,
+				  	  a.CATEGORY,
+				  	  a.TITLE,
+				  	  a.CONTENT,
+				  	  a.READCOUNT,
+				  	  a.LIKECOUNT,
+				  	  a.REPORTCOUNT,
+				  	  a.DEL,				  	  
+				  	  b.NICKNAME,
+				  	  <!-- c.MYPROFILE_IMG, -->
+				  	  (SELECT d.GRADE_NAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS GRADE_NAME,
+				      (SELECT d.FILENAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS FILENAME, 
+				  	  NVL((SELECT COUNT(e.BOARD_SEQ) 
+				  	  	   FROM PM_COMMENT e 
+				  	  	   WHERE e.DEL = 0 
+					  	  		AND a.SEQ = e.BOARD_SEQ 
+					  	   GROUP BY a.SEQ), 0) AS COUNTREPLY
+		  	  
+		    FROM PM_FREEBOARD a 
+		    	INNER JOIN PM_MEMBER b 
+					ON a.EMAIL = b.EMAIL 
+				<!-- LEFT OUTER JOIN PM_MYPROFILE c
+		  	 		ON a.EMAIL = c.EMAIL  -->
+		    WHERE a.DEL = 0  
+			
+			 <if test="board_code != null and board_code != ''">
+				 <if test="board_code == 'DOG'">
+			  		AND BOARD_CODE = 'DOG'
+			  	 </if>
+				 <if test="board_code == 'CAT'">
+			  		AND BOARD_CODE = 'CAT'
+			  	 </if>
+			  	 <if test="board_code == 'ETC'">
+			  		AND BOARD_CODE = 'ETC'
+			  	 </if>
+		  	 </if>
+	    	 
+		  	<if test="category != null and category != ''">
+			 	<if test="category == 'free'">
+			 		AND a.CATEGORY LIKE '잡담'
+			 	</if>
+			 	<if test="category == 'search'">
+			 		AND a.CATEGORY LIKE '찾아요'
+			 	</if>
+			 	<if test="category == 'infor'">
+			 		AND a.CATEGORY LIKE '정보'
+			 	</if>
+			 	<if test="category == 'qna'">
+			 		AND a.CATEGORY LIKE '질문'
+			 	</if>
+			 	<if test="category == 'boast'">
+			 		AND a.CATEGORY LIKE '자랑'
+			 	</if>
+		 	 </if> 
+			
+		 <if test="s_category != null and s_category != '' and s_keyword != null and s_keyword != ''">		  	
+		  	 <if test="s_category == 'title'">
+		  		AND a.TITLE LIKE '%'||#{s_keyword}||'%'
+		  	 </if>
+		  	 <if test="s_category == 'content'">
+		  		AND a.CONTENT LIKE '%'||#{s_keyword}||'%'
+		   	 </if>
+		  	 <if test="s_category == 'email'">
+		  		AND a.EMAIL LIKE '%'||#{s_keyword}||'%'
+		  	 </if>
+		  	 <if test="s_category == 'nickname'">
+		  		AND b.NICKNAME LIKE '%'||#{s_keyword}||'%'
+		  	 </if>
+			
+			 <!-- <if test="boardcode == 'DOG'">
+		  		AND a.BOARD_CODE = 'DOG'
+		  	 </if>
+			 <if test="boardcode == 'CAT'">
+		  		AND a.BOARD_CODE = 'CAT'
+		  	 </if>
+		  	 <if test="boardcode == 'ETC'">
+		  		AND a.BOARD_CODE = 'ETC'
+		  	 </if> -->
+			 
+		  	 	
+		  </if>
+		  ) F
+	WHERE F.RNUM BETWEEN ${start} AND ${end}
+	
+	<!-- 		<if test="boardcode == 'DOG'">
+		  		AND F.BOARD_CODE = 'DOG'
+		  	 </if>
+			 <if test="boardcode == 'CAT'">
+		  		AND F.BOARD_CODE = 'CAT'
+		  	 </if>
+		  	 <if test="boardcode == 'ETC'">
+		  		AND F.BOARD_CODE = 'ETC'
+		  	 </if>
+	 -->
+	
+</select> 
+
+
+
+
+<select id="getfbadminCount" parameterType="com.petmeeting.joy.freeboard.model.FbParam" 
+	resultType="java.lang.Integer">
+
+	SELECT NVL(COUNT(*), 0) AS CNT
+	FROM (SELECT * FROM (SELECT 					a.board_code,
+													a.seq,
+													a.email,
+													a.category,
+													a.title,
+													a.content,
+													a.readcount,
+													a.likecount,
+													a.reportcount,
+													a.regdate,
+													a.del,
+													b.nickname
+													FROM PM_FREEBOARD a 
+													INNER JOIN PM_MEMBER b 
+													ON a.EMAIL = b.EMAIL
+													)
+	
+	
+	 ) 
+	<if test="category != null and category != ''">
+			 	<if test="category == 'free'">
+			 		WHERE CATEGORY LIKE '잡담'
+			 	</if>
+			 	<if test="category == 'search'">
+			 		WHERE CATEGORY LIKE '찾아요'
+			 	</if>
+			 	<if test="category == 'infor'">
+			 		WHERE CATEGORY LIKE '정보'
+			 	</if>
+			 	<if test="category == 'qna'">
+			 		WHERE CATEGORY LIKE '질문'
+			 	</if>
+			 	<if test="category == 'boast'">
+			 		WHERE CATEGORY LIKE '자랑'
+			 	</if>
+		 	 </if> 
+		 	  <if test="category == null or category == ''">	
+					 WHERE 1=1		
+			</if>
+	<if test="s_category != null and s_category != ''
+	  	and s_keyword != null and s_keyword != ''">		  	
+	  	<if test="s_category == 'title'">
+	  		AND TITLE LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  	<if test="s_category == 'content'">
+	  		AND CONTENT LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  	<if test="s_category == 'email'">
+	  		AND email LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  	<if test="s_category == 'nickname'">
+	  		AND nickname LIKE '%'||#{s_keyword}||'%'
+	  	</if>
+	  			  
+	 </if>
+	 
+			 <if test="board_code == 'DOG'">
+		  		AND BOARD_CODE = 'DOG'
+		  	 </if>
+			 <if test="board_code == 'CAT'">
+		  		AND BOARD_CODE = 'CAT'
+		  	 </if>
+		  	 <if test="board_code == 'ETC'">
+		  		AND BOARD_CODE = 'ETC'
+		  	 </if>
+	 
+	 
+</select>
+
+
+
+
+
+
+
+<select id="getfbadminList" parameterType="com.petmeeting.joy.freeboard.model.FbParam" resultType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+	
+	SELECT F.BOARD_CODE,
+		   F.SEQ,	   
+		   F.EMAIL,	   
+		   F.CATEGORY,
+		   F.REGDATE,
+		   F.TITLE,
+		   F.CONTENT,
+		   F.READCOUNT,
+		   F.LIKECOUNT,
+		   F.REPORTCOUNT,	   
+		   F.DEL,
+		   F.NICKNAME,
+		   <!-- F.MYPROFILE_IMG,  -->
+		   F.GRADE_NAME,
+		   F.FILENAME,
+		   F.COUNTREPLY,
+		   F.RNUM
+	  
+	 FROM (SELECT ROW_NUMBER()OVER(ORDER BY
+			
+			<if test="sorting != null and sorting != ''">
+			 	<if test="sorting == 'old'">
+			 		a.REGDATE ASC
+			 	</if>
+			 	<if test="sorting == 'like'">
+			 		a.LIKECOUNT DESC
+			 	</if>
+			 	<if test="sorting == 'read'">
+			 		a.READCOUNT DESC
+			 	</if>
+		 	 </if> 
+		 	 <if test="sorting == null or sorting == ''">	
+					 a.REGDATE DESC		
+			</if>
+		
+				 ) AS RNUM,
+				  	  a.REGDATE,
+				  	  a.BOARD_CODE,
+				  	  a.SEQ,
+				  	  a.EMAIL,
+				  	  a.CATEGORY,
+				  	  a.TITLE,
+				  	  a.CONTENT,
+				  	  a.READCOUNT,
+				  	  a.LIKECOUNT,
+				  	  a.REPORTCOUNT,
+				  	  a.DEL,				  	  
+				  	  b.NICKNAME,
+				  	  <!-- c.MYPROFILE_IMG, -->
+				  	  (SELECT d.GRADE_NAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS GRADE_NAME,
+				      (SELECT d.FILENAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS FILENAME, 
+				  	  NVL((SELECT COUNT(e.BOARD_SEQ) 
+				  	  	   FROM PM_COMMENT e 
+				  	  	   WHERE e.DEL = 0 
+					  	  		AND a.SEQ = e.BOARD_SEQ 
+					  	   GROUP BY a.SEQ), 0) AS COUNTREPLY
+		  	  
+		    FROM PM_FREEBOARD a 
+		    	INNER JOIN PM_MEMBER b 
+					ON a.EMAIL = b.EMAIL 
+				<!-- LEFT OUTER JOIN PM_MYPROFILE c
+		  	 		ON a.EMAIL = c.EMAIL  -->
+		    WHERE 1=1  
+			
+			 <if test="board_code != null and board_code != ''">
+				 <if test="board_code == 'DOG'">
+			  		AND BOARD_CODE = 'DOG'
+			  	 </if>
+				 <if test="board_code == 'CAT'">
+			  		AND BOARD_CODE = 'CAT'
+			  	 </if>
+			  	 <if test="board_code == 'ETC'">
+			  		AND BOARD_CODE = 'ETC'
+			  	 </if>
+		  	 </if>
+	    	 
+		  	<if test="category != null and category != ''">
+			 	<if test="category == 'free'">
+			 		AND a.CATEGORY LIKE '잡담'
+			 	</if>
+			 	<if test="category == 'search'">
+			 		AND a.CATEGORY LIKE '찾아요'
+			 	</if>
+			 	<if test="category == 'infor'">
+			 		AND a.CATEGORY LIKE '정보'
+			 	</if>
+			 	<if test="category == 'qna'">
+			 		AND a.CATEGORY LIKE '질문'
+			 	</if>
+			 	<if test="category == 'boast'">
+			 		AND a.CATEGORY LIKE '자랑'
+			 	</if>
+		 	 </if> 
+			
+		 <if test="s_category != null and s_category != '' and s_keyword != null and s_keyword != ''">		  	
+		  	 <if test="s_category == 'title'">
+		  		AND a.TITLE LIKE '%'||#{s_keyword}||'%'
+		  	 </if>
+		  	 <if test="s_category == 'content'">
+		  		AND a.CONTENT LIKE '%'||#{s_keyword}||'%'
+		   	 </if>
+		  	 <if test="s_category == 'email'">
+		  		AND a.EMAIL LIKE '%'||#{s_keyword}||'%'
+		  	 </if>
+		  	 <if test="s_category == 'nickname'">
+		  		AND b.NICKNAME LIKE '%'||#{s_keyword}||'%'
+		  	 </if>
+			
+			 <!-- <if test="boardcode == 'DOG'">
+		  		AND a.BOARD_CODE = 'DOG'
+		  	 </if>
+			 <if test="boardcode == 'CAT'">
+		  		AND a.BOARD_CODE = 'CAT'
+		  	 </if>
+		  	 <if test="boardcode == 'ETC'">
+		  		AND a.BOARD_CODE = 'ETC'
+		  	 </if> -->
+			 
+		  	 	
+		  </if>
+		  ) F
+	WHERE F.RNUM BETWEEN ${start} AND ${end}
+	
+	<!-- 		<if test="boardcode == 'DOG'">
+		  		AND F.BOARD_CODE = 'DOG'
+		  	 </if>
+			 <if test="boardcode == 'CAT'">
+		  		AND F.BOARD_CODE = 'CAT'
+		  	 </if>
+		  	 <if test="boardcode == 'ETC'">
+		  		AND F.BOARD_CODE = 'ETC'
+		  	 </if>
+	 -->
+	
+</select> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<update id="readcountup">
+        UPDATE PM_FREEBOARD
+        SET READCOUNT = READCOUNT + 1
+        WHERE SEQ = #{seq}
+</update>
+
+
+
+
+
+
+<insert id="writedowncomment" parameterType="com.petmeeting.joy.freeboard.model.CommentDto">
+INSERT INTO PM_COMMENT(SEQ, BOARD_CODE, BOARD_SEQ, REF, STEP, DEPTH, EMAIL, CONTENT, LIKECOUNT, REPORTCOUNT, REGDATE, DEL)
+VALUES(PM_COMMENT_SEQ.NEXTVAL, #{board_code}, #{board_seq}, (SELECT NVL(MAX(REF),0)+1 FROM PM_COMMENT), 0, 0, #{email}, #{content}, 0, 0,sysdate,0)
+
+</insert>
+
+<select id="getcmList"
+parameterType="java.lang.Integer"
+resultType="com.petmeeting.joy.freeboard.model.CommentDto">
+	SELECT	F.SEQ,
+ 	    F.BOARD_CODE,
+        F.BOARD_SEQ,
+        F.REF,
+        F.STEP,
+        F.DEPTH,
+	    F.EMAIL,
+	    F.NICKNAME,
+	    F.CONTENT,
+	    F.LIKECOUNT,
+	    F.REPORTCOUNT,
+	    F.REGDATE,
+	    F.DEL,
+	    F.MYPROFILE_IMG,
+	    F.GRADE_NAME,
+	    F.FILENAME
+FROM(SELECT a.SEQ,
+	 	    a.BOARD_CODE,
+	        a.BOARD_SEQ,
+	        a.REF,
+	        a.STEP,
+	        a.DEPTH,
+		    a.EMAIL,
+		    b.NICKNAME,
+		    a.CONTENT,
+		    a.LIKECOUNT,
+		    a.REPORTCOUNT,
+		    a.REGDATE,
+		    a.DEL,
+		    c.MYPROFILE_IMG,
+		    (SELECT d.GRADE_NAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS GRADE_NAME,
+		    (SELECT d.FILENAME FROM PM_GRADE d WHERE b.TOTALPOINT BETWEEN d.MIN_POINT AND d.MAX_POINT) AS FILENAME
+	FROM PM_COMMENT a 
+		INNER JOIN PM_MEMBER b
+			ON a.EMAIL = b.EMAIL
+		LEFT OUTER JOIN PM_MYPROFILE c
+			ON a.EMAIL = c.EMAIL )F 
+WHERE F.BOARD_SEQ = #{board_seq}
+ORDER BY REF ASC, STEP ASC			
+	
+</select> 
+
+<!-- <update id="cmdelete" parameterType="com.petmeeting.joy.freeboard.model.CommentDto" >
+	UPDATE PM_COMMENT SET
+	DEL = 1
+	WHERE SEQ=#{seq}
+</update> -->
+ 
+<update id="cmdelete" parameterType="com.petmeeting.joy.freeboard.model.CommentDto" >
+	UPDATE PM_COMMENT SET
+	DEL = 1
+	<if test="step == 0"> WHERE REF=#{ref}</if>
+	<if test="step != 0"> WHERE SEQ=#{seq}</if>
+</update> 
+
+<update id="likeboard" parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+UPDATE PM_FREEBOARD
+SET LIKECOUNT = LIKECOUNT + 1
+WHERE SEQ=#{seq}
+</update>
+
+<!-- <insert id="likeboard" parameterType="com.petmeeting.joy.freeboard.model.boardlikeDto">
+INSERT INTO PM_BOARD_LIKE(SEQ, BOARD_CODE, BOARD_SEQ, EMAIL)
+VALUES(PM_BOARD_LIKE_SEQ.NEXTVAL, ${board_code}, ${board_seq}, ${email})
+</insert> -->
+
+
+<insert id="addlike" parameterType="com.petmeeting.joy.freeboard.model.BoardlikeDto">
+INSERT INTO PM_BOARD_LIKE(SEQ, BOARD_CODE, BOARD_SEQ, EMAIL)
+VALUES(PM_BOARD_LIKE_SEQ.NEXTVAL, #{board_code},#{board_seq},#{email})
+</insert>
+
+
+<update id="dislikeboard" parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto">
+UPDATE PM_FREEBOARD
+SET LIKECOUNT = LIKECOUNT - 1
+WHERE SEQ=#{seq}
+</update>
+
+<delete id="dellike" parameterType="com.petmeeting.joy.freeboard.model.BoardlikeDto" >
+DELETE FROM PM_BOARD_LIKE
+WHERE BOARD_SEQ =#{board_seq} AND EMAIL =#{email}
+</delete>
+
+
+
+<select id="dolikecheck" parameterType="com.petmeeting.joy.freeboard.model.BoardlikeDto" resultType="java.lang.Integer">
+SELECT COUNT(*) FROM PM_BOARD_LIKE 
+WHERE BOARD_CODE = #{board_code} AND EMAIL = #{email} AND BOARD_SEQ = #{board_seq}
+</select> 
+
+
+<select id="getlikecount"
+parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto" resultType="java.lang.Integer">
+	SELECT LIKECOUNT
+	FROM PM_FREEBOARD
+	where seq = #{board_seq} <!-- AND board_code = #{board_code} -->
+</select> 
+<select id="_getlikecount"
+parameterType="com.petmeeting.joy.freeboard.model.FreeboardDto" resultType="java.lang.Integer">
+	SELECT LIKECOUNT
+	FROM PM_FREEBOARD
+	where seq = #{board_seq}
+</select> 
+<select id="_getcmlikecount"
+parameterType="com.petmeeting.joy.freeboard.model.CommentDto" resultType="java.lang.Integer">
+	SELECT LIKECOUNT
+	FROM PM_COMMENT
+	where seq = #{seq} AND del = 0
+</select> 
+
+<select id="docmlikecheck" parameterType="com.petmeeting.joy.freeboard.model.CommentlikeDto" resultType="java.lang.Integer">
+SELECT COUNT(*) FROM PM_COMMENT_LIKE 
+WHERE EMAIL = #{email} AND BOARD_SEQ = #{seq}
+</select>
+
+
+<insert id="addcmlike" parameterType="com.petmeeting.joy.freeboard.model.CommentlikeDto">
+INSERT INTO PM_COMMENT_LIKE(SEQ, BOARD_SEQ, EMAIL)
+VALUES(PM_COMMENT_LIKE_SEQ.NEXTVAL, #{seq},#{email})
+</insert>
+
+
+<delete id="delcmlike" parameterType="com.petmeeting.joy.freeboard.model.CommentlikeDto">
+DELETE FROM PM_COMMENT_LIKE
+WHERE EMAIL = #{email} AND board_seq = #{seq}
+</delete>
+
+
+<update id="cmlikeup" parameterType="com.petmeeting.joy.freeboard.model.BoardlikeDto">
+UPDATE PM_COMMENT
+SET LIKECOUNT = LIKECOUNT + 1
+WHERE SEQ=#{seq}
+</update>
+
+<update id="cmlikedown" parameterType="com.petmeeting.joy.freeboard.model.BoardlikeDto">
+UPDATE PM_COMMENT
+SET LIKECOUNT = LIKECOUNT - 1
+WHERE SEQ=#{seq}
+</update>
+
+<select id="getcmdetail"
+parameterType="java.lang.Integer"
+resultType="com.petmeeting.joy.freeboard.model.CommentDto">
+	SELECT *
+	FROM PM_COMMENT
+	WHERE SEQ=#{seq}
+</select> 
+
+<update id="cmupdate" parameterType="com.petmeeting.joy.freeboard.model.CommentDto" >
+	UPDATE PM_COMMENT SET
+	CONTENT =#{content}
+	WHERE SEQ=#{seq}
+</update>
+
+
+<update id="recommentupdate"
+	parameterType="com.petmeeting.joy.freeboard.model.CommentDto">
+	UPDATE PM_COMMENT 
+	SET STEP=STEP+1
+	WHERE REF=(SELECT REF FROM PM_COMMENT WHERE SEQ=#{seq})
+		AND STEP>(SELECT STEP FROM PM_COMMENT WHERE SEQ=#{seq})		
+</update>
+
+<insert id="recommentinsert"
+	parameterType="com.petmeeting.joy.freeboard.model.CommentDto">
+
+	INSERT INTO PM_COMMENT
+		(SEQ, BOARD_CODE, BOARD_SEQ, REF, STEP, DEPTH, EMAIL, CONTENT, LIKECOUNT, REPORTCOUNT, REGDATE, DEL)
+	VALUES(PM_COMMENT_SEQ.NEXTVAL, #{board_code}, #{board_seq},
+		(SELECT REF FROM PM_COMMENT WHERE SEQ=#{seq}),
+		(SELECT STEP FROM PM_COMMENT WHERE SEQ=#{seq})+1,
+		(SELECT DEPTH FROM PM_COMMENT WHERE SEQ=#{seq})+1,
+		#{email}, #{content}, 0, 0,sysdate,0)	
+
+</insert>
+
+
+<select id="doreportcheck" parameterType="com.petmeeting.joy.freeboard.model.ReportDto" resultType="java.lang.Integer">
+SELECT COUNT(*) FROM PM_BOARD_REPORT 
+WHERE BOARD_CODE = #{board_code} AND EMAIL = #{email} AND BOARD_SEQ = #{board_seq}
+</select> 
+
+
+<insert id="reportwritedown" parameterType="com.petmeeting.joy.freeboard.model.ReportDto">
+INSERT INTO PM_BOARD_REPORT(SEQ, BOARD_CODE, BOARD_SEQ, EMAIL, REASON)
+VALUES(PM_BOARD_REPORT_SEQ.NEXTVAL, #{board_code}, #{board_seq},#{email},#{reason})
+</insert>
+
+<select id="docmreportcheck" parameterType="com.petmeeting.joy.freeboard.model.CmreportDto" resultType="java.lang.Integer">
+SELECT COUNT(*) FROM PM_COMMENT_REPORT 
+WHERE COMMENT_seq = #{comment_seq} AND BOARD_CODE = #{board_code} AND EMAIL = #{email} AND BOARD_SEQ = #{board_seq}
+</select> 
+
+<insert id="cmreportwritedown" parameterType="com.petmeeting.joy.freeboard.model.CmreportDto">
+INSERT INTO PM_COMMENT_REPORT(SEQ, COMMENT_SEQ, BOARD_CODE, BOARD_SEQ, EMAIL, REASON)
+VALUES(PM_COMMENT_REPORT_SEQ.NEXTVAL, #{comment_seq},#{board_code}, #{board_seq},#{email},#{reason})
+</insert>
+
+ 
+<update id="pointupfb" parameterType="com.petmeeting.joy.login.model.MemberDto">
+<!-- <update id="pointupfb" parameterType="com.petmeeting.joy.login.model.MemberDto"> -->
+UPDATE PM_MEMBER
+SET TOTALPOINT = TOTALPOINT + 200, POINT = POINT + 200
+WHERE EMAIL = #{email}
+</update> 
+
+
+<update id="pointupcm" parameterType="com.petmeeting.joy.login.model.MemberDto">
+<!-- <update id="pointupfb" parameterType="com.petmeeting.joy.login.model.MemberDto"> -->
+UPDATE PM_MEMBER
+SET TOTALPOINT = TOTALPOINT + 50, POINT = POINT + 50
+WHERE EMAIL = #{email}
+</update> 
+
+<delete id="Freeboardadmindelete" parameterType="java.lang.Integer">
+	DELETE FROM PM_FREEBOARD
+	WHERE SEQ=#{seq} 
+</delete>
+
+
+<!-- 
+<update id="Freeboardadmindelete" parameterType="java.lang.Integer" >
+	UPDATE PM_FREEBOARD SET
+	DEL = 1
+	WHERE SEQ=#{seq}
+</update> -->
+
+
+<select id="getadminreport" parameterType="com.petmeeting.joy.freeboard.model.ReportDto" resultType="com.petmeeting.joy.freeboard.model.ReportDto">
+SELECT *
+FROM PM_BOARD_REPORT
+WHERE BOARD_SEQ = #{seq} AND BOARD_CODE = #{board_code}
+</select> 
+
+<delete id="admincmdelete" parameterType="com.petmeeting.joy.freeboard.model.CommentDto" >
+	UPDATE FROM PM_COMMENT
+	<if test="step == 0"> WHERE REF=#{ref}</if>
+	<if test="step != 0"> WHERE SEQ=#{seq}</if>
+</delete> 
+
+
+
+</mapper>

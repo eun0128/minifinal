@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Review">
+<insert id="writeReview" parameterType="com.petmeeting.joy.store.model.ReviewDto">
+INSERT INTO PM_REVIEW(SEQ, ORDER_SEQ, PRODUCTCODE, EMAIL, SCORE, TITLE, CONTENT, FILENAME, REGDATE)
+VALUES(PM_REVIEW_SEQ.NEXTVAL, #{order_seq}, #{productcode}, #{email}, #{score}, #{title}, #{content}, #{filename}, SYSDATE)
+</insert>
+
+<select id="getReviewScoreAvg" parameterType="java.lang.String" resultType="java.lang.Double">
+SELECT ROUND(AVG(SCORE),1)
+FROM PM_REVIEW
+GROUP BY PRODUCTCODE HAVING PRODUCTCODE=#{pcode}
+</select>
+
+<select id="getReviewList" parameterType="com.petmeeting.joy.store.model.ReviewParam" resultType="com.petmeeting.joy.store.model.ReviewBean">
+SELECT SEQ, PRODUCTCODE, PRODUCTNAME, PSIZE, PCOLOR, EMAIL, NICKNAME, SCORE, TITLE, CONTENT, FILENAME, REGDATE
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY 
+<if test="r_sorting == 'highscore'">
+R.SCORE DESC, 
+</if>
+<if test="r_sorting == 'lowscore'">
+R.SCORE ASC, 
+</if>
+R.REGDATE DESC)
+AS RNUM, R.SEQ, R.PRODUCTCODE, P.PRODUCTNAME, PO.PSIZE, PO.PCOLOR, R.EMAIL, M.NICKNAME, R.SCORE, R.TITLE, R.CONTENT, R.FILENAME, R.REGDATE
+FROM PM_REVIEW R, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION PO, PM_PRODUCT P, PM_MEMBER M
+WHERE R.ORDER_SEQ = O.SEQ
+	AND O.PRODUCT_OPTION_SEQ = PO.SEQ
+	AND R.PRODUCTCODE = P.PRODUCTCODE
+	AND R.EMAIL = M.EMAIL
+	<if test="productcode != null">
+	AND R.PRODUCTCODE = #{productcode}
+	</if>
+	<if test="r_sorting_score > 0">
+	AND R.SCORE = #{r_sorting_score} 
+	</if>
+	<if test="r_category == 'productcode'">
+	AND R.PRODUCTCODE LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'productname'">
+	AND P.PRODUCTNAME LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'nickname'">
+	AND M.NICKNAME LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'content'">
+	AND R.CONTENT LIKE '%' || #{r_keyword} || '%' 
+	</if>)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="getReviewCount" parameterType="com.petmeeting.joy.store.model.ReviewParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0)
+FROM PM_REVIEW R, PM_PRODUCT P, PM_MEMBER M
+WHERE R.PRODUCTCODE = P.PRODUCTCODE
+	AND R.EMAIL = M.EMAIL
+	<if test="productcode != null">
+	AND R.PRODUCTCODE = #{productcode}
+	</if>
+	<if test="r_sorting_score > 0">
+	AND R.SCORE = #{r_sorting_score} 
+	</if>
+	<if test="r_category == 'productcode'">
+	AND R.PRODUCTCODE LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'productname'">
+	AND P.PRODUCTNAME LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'nickname'">
+	AND M.NICKNAME LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'content'">
+	AND R.CONTENT LIKE '%' || #{r_keyword} || '%' 
+	</if>
+</select>
+
+<select id="getMyReviewListLatest" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.ReviewBean">
+SELECT SEQ, P_FILENAME, PRODUCTNAME, PSIZE, PCOLOR, EMAIL, SCORE, TITLE, REGDATE
+FROM ( SELECT ROW_NUMBER()OVER(ORDER BY R.REGDATE DESC) AS RNUM, R.SEQ, P.FILENAME AS P_FILENAME, P.PRODUCTNAME, PO.PSIZE, PO.PCOLOR, R.EMAIL, R.SCORE, R.TITLE, R.REGDATE
+		FROM PM_REVIEW R, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION PO, PM_PRODUCT P
+		WHERE R.EMAIL = #{email }
+			AND R.ORDER_SEQ = O.SEQ
+			AND O.PRODUCT_OPTION_SEQ = PO.SEQ
+			AND R.PRODUCTCODE = P.PRODUCTCODE)
+WHERE RNUM BETWEEN 1 AND 5
+</select>
+
+<select id="getMyReviewList" parameterType="com.petmeeting.joy.store.model.ReviewParam" resultType="com.petmeeting.joy.store.model.ReviewBean">
+SELECT SEQ, P_FILENAME, PRODUCTNAME, PSIZE, PCOLOR, EMAIL, SCORE, TITLE, CONTENT, FILENAME, REGDATE
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY R.REGDATE DESC) AS RNUM, R.SEQ, P.FILENAME AS P_FILENAME, P.PRODUCTNAME, PO.PSIZE, PO.PCOLOR, R.EMAIL, R.SCORE, R.TITLE, R.CONTENT, R.FILENAME, R.REGDATE
+FROM PM_REVIEW R, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION PO, PM_PRODUCT P
+WHERE R.EMAIL = #{email }
+	AND R.ORDER_SEQ = O.SEQ
+	AND O.PRODUCT_OPTION_SEQ = PO.SEQ
+	AND R.PRODUCTCODE = P.PRODUCTCODE
+	<if test="r_category == 'productname'">
+	AND P.PRODUCTNAME LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'content'">
+	AND R.CONTENT LIKE '%' || #{r_keyword} || '%' 
+	</if>)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="getMyReviewCount" parameterType="com.petmeeting.joy.store.model.ReviewParam" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0)
+FROM PM_REVIEW R, PM_PRODUCT P
+WHERE R.EMAIL = #{email }
+	AND R.PRODUCTCODE = P.PRODUCTCODE
+	<if test="r_category == 'productname'">
+	AND P.PRODUCTNAME LIKE '%' || #{r_keyword} || '%' 
+	</if>
+	<if test="r_category == 'content'">
+	AND R.CONTENT LIKE '%' || #{r_keyword} || '%' 
+	</if>
+</select>
+
+<delete id="deleteReview" parameterType="java.lang.Integer">
+DELETE FROM PM_REVIEW
+WHERE SEQ = #{seq}
+</delete>
+
+<!-- 시퀀스로 review 정보 가져오기 -->
+<select id="getReviewParamSeq" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.store.model.ReviewBean">
+SELECT R.SEQ, P.FILENAME AS P_FILENAME, P.PRODUCTNAME, PO.PSIZE, PO.PCOLOR, R.EMAIL, R.SCORE, R.TITLE, R.CONTENT, R.FILENAME, R.REGDATE
+FROM PM_REVIEW R, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION PO, PM_PRODUCT P
+WHERE R.ORDER_SEQ = O.SEQ
+	AND O.PRODUCT_OPTION_SEQ = PO.SEQ
+	AND R.PRODUCTCODE = P.PRODUCTCODE
+	AND R.SEQ = #{seq}
+</select>
+
+<!-- 리뷰 업데이트 -->
+<update id="updateReview" parameterType="com.petmeeting.joy.store.model.ReviewDto">
+UPDATE PM_REVIEW
+SET TITLE = #{title}, CONTENT = #{content}, SCORE = #{score}
+	<if test="filename != ''">
+		, FILENAME = #{filename}
+	</if>
+WHERE SEQ = #{seq}
+</update>
+</mapper>

@@ -1,0 +1,66 @@
+@charset "UTF-8";
+
+.badMem{
+	color: #fff;
+	background-color: #d49935;
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.leaveMem{
+	color: #fff;
+	background-color: #b90707;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.boardTable tbody tr:hover{
+	background-color: #008c9e0f;
+}
+
+.infoBtn{
+	cursor: pointer;
+	background-color: rgba(255,255,255,0);
+	background-image: url("/PetMeeting/admin_resources/img/memberinfoBtn.png");
+	background-repeat: no-repeat;
+	background-size: contain;
+	background-position: center;
+	width: 20px;
+	height: 20px;
+	border: none;
+	outline: none;
+}
+
+.searchWrap{
+	float: right;
+}
+.searchWrap input{
+	border: none;
+	outline: none;
+	border-bottom: 1px solid black;
+	/* margin-right: 15px; */
+}
+/* #searchBtn{
+	border: none;
+    outline: none;
+    cursor: pointer;
+    color: white;
+    width: 50px;
+    height: 35px;
+    border-radius: 0.5em;
+    background-color: #47c9da;
+} */
+
+#leaveBtn{
+	border: none;
+    outline: none;
+	color: #fff;
+	background-color: #d49935;
+	font-size: 17px;
+    padding: 5px;
+    border-radius: 0.5em;
+    width: 80px;
+    height: 35px;
+    margin-top: 10px;
+}

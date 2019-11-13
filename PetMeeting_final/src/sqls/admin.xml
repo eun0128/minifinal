@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="Admin">
+	<!-- 소모임 목록 -->
+	<select id="getPlayboardList" parameterType="com.petmeeting.joy.playboard.model.PlayboardSearchBean" resultType="com.petmeeting.joy.playboard.model.PlayboardDto">
+		SELECT SEQ, BOARD_CODE, EMAIL, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY, 
+			   PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, REPORTCOUNT, PDATE, EDATE, REGDATE, DEL
+		FROM (SELECT ROW_NUMBER()OVER(ORDER BY SEQ DESC)AS RNUM, SEQ, BOARD_CODE, EMAIL, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY, 
+			   PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, REPORTCOUNT, PDATE, EDATE, REGDATE, DEL
+			   FROM PM_PLAYBOARD
+			   WHERE 1=1 AND CATEGORY LIKE '%'||#{playCategory}||'%'  
+			<if test="sortingType == '선택' and searchCategory == '선택'">
+				)
+			</if>
+			
+			<if test="sortingType != '선택' or searchCategory != '선택'">
+				<if test="sortingType == '삭제'">
+					AND DEL=1
+				</if>			
+				<if test="sortingType == '마감'">
+					AND EDATE <![CDATA[<=]]> SYSDATE
+				</if>	
+				<if test="sortingType == '신고'">
+					AND REPORTCOUNT <![CDATA[>]]> 0
+				</if>
+				<if test="searchCategory == '작성자'">
+					AND EMAIL LIKE '%'||#{searchText}||'%'  
+				</if>
+				
+				<if test="searchCategory == '제목'">
+					AND TITLE LIKE '%'||#{searchText}||'%'  
+				</if>
+				
+				<if test="searchCategory == '내용'">
+					AND CONTENT LIKE '%'||#{searchText}||'%'  
+				</if>
+				
+				<if test="searchCategory == '장소'">	
+					AND LOCATION LIKE '%'||#{searchText}||'%'  
+				</if>		
+				)												
+			</if>						
+			WHERE RNUM <![CDATA[>=]]> #{startRow} AND RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	<!-- 총 글의 개수(row count) -->
+	<select id="getTotalRowCount" parameterType="com.petmeeting.joy.playboard.model.PlayboardSearchBean" resultType="java.lang.Integer">
+		SELECT COUNT(*)
+		FROM (SELECT ROW_NUMBER()OVER(ORDER BY SEQ DESC) AS RNUM, SEQ, BOARD_CODE, EMAIL, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY, 
+			   PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, REPORTCOUNT, PDATE, EDATE, REGDATE, DEL
+			   FROM PM_PLAYBOARD
+			   WHERE 1=1 AND CATEGORY LIKE '%'||#{playCategory}||'%'  
+			<if test="sortingType == '선택' and searchCategory == '선택'">
+				)
+			</if>
+			
+			<if test="sortingType != '선택' or searchCategory != '선택'">
+				<if test="sortingType == '삭제'">
+					AND DEL=1
+				</if>			
+				<if test="sortingType == '마감'">
+					AND EDATE <![CDATA[<=]]> SYSDATE
+				</if>	
+				<if test="sortingType == '신고'">
+					AND REPORTCOUNT <![CDATA[>]]> 0
+				</if>
+				<if test="searchCategory == '작성자'">
+					AND EMAIL LIKE '%'||#{searchText}||'%'  
+				</if>
+				
+				<if test="searchCategory == '제목'">
+					AND TITLE LIKE '%'||#{searchText}||'%'  
+				</if>
+				
+				<if test="searchCategory == '내용'">
+					AND CONTENT LIKE '%'||#{searchText}||'%'  
+				</if>
+				
+				<if test="searchCategory == '장소'">	
+					AND LOCATION LIKE '%'||#{searchText}||'%'  
+				</if>		
+				)												
+			</if>					
+	</select>
+	
+	<!-- 소모임 글 삭제 -->
+	<delete id="deletePlayboard" parameterType="java.lang.Integer">
+		DELETE 
+		FROM PM_PLAYBOARD
+		WHERE SEQ=#{seq}
+	</delete>
+	<!-- 삭제된 모임의 참여자 목록 삭제 -->
+	<delete id="deletePlayMem" parameterType="java.lang.Integer">
+		DELETE
+		FROM PM_PLAYMEM
+		WHERE PLAY_SEQ=#{seq}
+	</delete>
+	<!-- 삭제된 모임의 Q&A 삭제 -->
+	<delete id="deletePlayboardQnA" parameterType="java.lang.Integer">
+		DELETE
+		FROM PM_PLAYBOARDQNA
+		WHERE BOARD_SEQ=#{seq}
+	</delete>
+	
+	<!-- 소모임 디테일 -->
+	<select id="getPlayboardDetail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.playboard.model.PlayboardDto">
+		SELECT SEQ, BOARD_CODE, EMAIL, NICKNAME, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, CATEGORY, 
+				PRICE, PEOPLE, PERSONCOUNT, READCOUNT, LIKECOUNT, REPORTCOUNT, PDATE, EDATE, REGDATE, DEL
+		FROM PM_PLAYBOARD, (SELECT NICKNAME FROM PM_MEMBER WHERE EMAIL=(SELECT EMAIL FROM PM_PLAYBOARD WHERE SEQ=#{seq}))
+		WHERE SEQ=#{seq}
+	</select>
+
+	<!-- 게시글 신고 내용 불러오기 -->
+	<select id="getBoardReportReason" parameterType="com.petmeeting.joy.admin.model.ReportDto" resultType="com.petmeeting.joy.admin.model.ReportDto">
+		SELECT R.SEQ, R.BOARD_CODE, R.BOARD_SEQ, R.EMAIL, M.NICKNAME, R.REASON
+		FROM PM_BOARD_REPORT R JOIN PM_MEMBER M ON R.EMAIL = M.EMAIL
+		WHERE R.BOARD_CODE=#{board_code} AND R.BOARD_SEQ=#{board_seq}
+		ORDER BY R.SEQ ASC
+	</select>
+
+	<!-- 신고 삭제 -->
+	<delete id="deleteBoardReport" parameterType="com.petmeeting.joy.admin.model.ReportDto">
+		DELETE
+		FROM PM_BOARD_REPORT
+		WHERE SEQ=#{seq} AND BOARD_CODE=#{board_code} AND BOARD_SEQ=#{board_seq} 
+	</delete>
+	
+	<!-- 신고 카운트 감소 -->
+	<update id="minusReportCount" parameterType="com.petmeeting.joy.admin.model.ReportDto">
+		UPDATE 
+		<if test="board_code == 'PLAY'">
+			PM_PLAYBOARD
+		</if>
+		<if test="board_code != 'PLAY'">
+			PM_FREEBOARD
+		</if>
+		SET REPORTCOUNT = REPORTCOUNT-1
+		WHERE SEQ=#{board_seq}
+	</update>
+	
+	
+	<!-- 모든 회원 목록 불러오기 -->
+	<resultMap type="com.petmeeting.joy.admin.model.MyProfileDto" id="MyProfileDto">
+		<result column="EMAIL" property="email"/>
+		<result column="MYPROFILE_IMG" property="myprofile_img"/>
+		<result column="MYAGE" property="myage"/>
+		<result column="MYSEX" property="mysex"/>
+		<result column="MYINTRO" property="myintro"/>
+	</resultMap>
+	<resultMap type="com.petmeeting.joy.admin.model.PetProfileDto" id="PetProfileDto">
+		<result column="EMAIL" property="email"/>
+		<result column="PETPROFILE_IMG" property="petprofile_img"/>
+		<result column="PETNAME" property="petname"/>
+		<result column="PETAGE" property="petage"/>
+		<result column="PETTYPE" property="pettype"/>
+		<result column="PETDETAIL" property="petdetail"/>
+		<result column="PETWEIGHT" property="petweight"/>
+		<result column="PETSEX" property="petsex"/>
+		<result column="PETTNR" property="pettnr"/>
+		<result column="PETINTRO" property="petintro"/>
+	</resultMap>	
+	<resultMap type="com.petmeeting.joy.admin.model.AdminMemberDto" id="MemberInfo">
+		<result column="EMAIL" property="email"/>
+		<result column="PWD" property="pwd"/>
+		<result column="NAME" property="name"/>
+		<result column="NICKNAME" property="nickname"/>
+		<result column="POSTCODE" property="postcode"/>
+		<result column="ADDRESS" property="address"/>
+		<result column="ADDRESS_DETAIL" property="address_detail"/>
+		<result column="ADDRESS_REFER" property="address_refer"/>
+		<result column="PHONE" property="phone"/>
+		<result column="TOTALPOINT" property="totalpoint"/>
+		<result column="POINT" property="point"/>
+		<result column="S_POINT" property="s_point"/>
+		<result column="REPORTCOUNT" property="reportcount"/>
+		<result column="AUTH" property="auth"/>
+		<result column="GRADE_NAME" property="grade_name"/>
+		<collection property="myProfile" resultMap="MyProfileDto"/>	
+		<collection property="petProfile" resultMap="PetProfileDto"/>		
+	</resultMap>
+	<select id="getAllMemberList" parameterType="com.petmeeting.joy.admin.model.MemberSearchBean" resultMap="MemberInfo">		
+		SELECT *
+		FROM (
+			SELECT EMAIL, PWD, NAME, NICKNAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH, GRADE_NAME,
+					MYPROFILE_IMG, MYAGE, MYSEX, MYINTRO,
+					PETPROFILE_IMG, PETNAME, PETAGE, PETTYPE, PETDETAIL, PETWEIGHT, PETSEX, PETTNR, PETINTRO,					
+					ROW_NUMBER()OVER(ORDER BY EMAIL ASC) AS RNUM
+			FROM (
+				SELECT M.EMAIL, M.PWD, M.NAME, M.NICKNAME, M.POSTCODE, M.ADDRESS, M.ADDRESS_DETAIL, M.ADDRESS_REFER, M.PHONE, M.TOTALPOINT, M.POINT, M.S_POINT, M.REPORTCOUNT, M.AUTH,
+						(SELECT GRADE_NAME FROM PM_GRADE WHERE M.TOTALPOINT <![CDATA[>=]]> MIN_POINT AND TOTALPOINT <![CDATA[<=]]> MAX_POINT) AS GRADE_NAME,
+						P.MYPROFILE_IMG, P.MYAGE, P.MYSEX, P.MYINTRO,
+						F.PETPROFILE_IMG, F.PETNAME, F.PETAGE, F.PETTYPE, F.PETDETAIL, F.PETWEIGHT, F.PETSEX, F.PETTNR, F.PETINTRO					
+				FROM PM_MEMBER M FULL OUTER JOIN PM_MYPROFILE P ON M.EMAIL=P.EMAIL FULL OUTER JOIN PM_PETPROFILE F ON M.EMAIL=F.EMAIL 	
+				WHERE 1=1 
+				<if test="sortingType == '전체' and search_category != '선택'">
+					AND
+					<if test="search_category == '이메일'">
+						M.EMAIL LIKE '%'||#{search_txt}||'%'
+					</if>
+					<if test="search_category == '닉네임'">
+						M.NICKNAME LIKE '%'||#{search_txt}||'%'
+					</if>	
+				</if>
+				<if test="sortingType == '신고' and search_category == '선택'">
+					AND M.REPORTCOUNT <![CDATA[>]]> 0
+				</if>
+				<if test="sortingType == '활중' and search_category == '선택'">
+					AND AUTH=4
+				</if>
+				<if test="sortingType == '신고' and search_category != '선택'">
+					AND M.REPORTCOUNT <![CDATA[>]]> 0 AND
+					<if test="search_category == '이메일'">
+						M.EMAIL LIKE '%'||#{search_txt}||'%'
+					</if>
+					<if test="search_category == '닉네임'">
+						M.NICKNAME LIKE '%'||#{search_txt}||'%'
+					</if>	
+				</if>	
+				<if test="sortingType == '활중' and search_category != '선택'">
+					AND AUTH=4 AND
+					<if test="search_category == '이메일'">
+						M.EMAIL LIKE '%'||#{search_txt}||'%'
+					</if>
+					<if test="search_category == '닉네임'">
+						M.NICKNAME LIKE '%'||#{search_txt}||'%'
+					</if>	
+				</if>			
+			) A 
+			WHERE  
+				<if test="grade == 'vip'">GRADE_NAME=#{grade}</if> 
+				<if test="grade != 'vip'">GRADE_NAME LIKE '%'||#{grade}||'%' </if> 				
+		)
+		WHERE RNUM <![CDATA[>=]]> #{start} AND RNUM <![CDATA[<=]]> #{end}				
+	</select>
+	
+	<!-- 회원 로우카운트 -->
+	<select id="getMemberTotalCount" parameterType="com.petmeeting.joy.admin.model.MemberSearchBean" resultType="java.lang.Integer">
+		SELECT COUNT(*)
+		FROM (
+			SELECT EMAIL, PWD, NAME, NICKNAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH, GRADE_NAME,
+					MYPROFILE_IMG, MYAGE, MYSEX, MYINTRO,
+					PETPROFILE_IMG, PETNAME, PETAGE, PETTYPE, PETDETAIL, PETWEIGHT, PETSEX, PETTNR, PETINTRO,					
+					ROW_NUMBER()OVER(ORDER BY EMAIL ASC) AS RNUM
+			FROM (
+				SELECT M.EMAIL, M.PWD, M.NAME, M.NICKNAME, M.POSTCODE, M.ADDRESS, M.ADDRESS_DETAIL, M.ADDRESS_REFER, M.PHONE, M.TOTALPOINT, M.POINT, M.S_POINT, M.REPORTCOUNT, M.AUTH,
+						(SELECT GRADE_NAME FROM PM_GRADE WHERE M.TOTALPOINT <![CDATA[>=]]> MIN_POINT AND TOTALPOINT <![CDATA[<=]]> MAX_POINT) AS GRADE_NAME,
+						P.MYPROFILE_IMG, P.MYAGE, P.MYSEX, P.MYINTRO,
+						F.PETPROFILE_IMG, F.PETNAME, F.PETAGE, F.PETTYPE, F.PETDETAIL, F.PETWEIGHT, F.PETSEX, F.PETTNR, F.PETINTRO					
+				FROM PM_MEMBER M FULL OUTER JOIN PM_MYPROFILE P ON M.EMAIL=P.EMAIL FULL OUTER JOIN PM_PETPROFILE F ON M.EMAIL=F.EMAIL 	
+				WHERE 1=1 
+				<if test="sortingType == '전체' and search_category != '선택'">
+					AND
+					<if test="search_category == '이메일'">
+						M.EMAIL LIKE '%'||#{search_txt}||'%'
+					</if>
+					<if test="search_category == '닉네임'">
+						M.NICKNAME LIKE '%'||#{search_txt}||'%'
+					</if>	
+				</if>
+				<if test="sortingType == '신고' and search_category == '선택'">
+					AND M.REPORTCOUNT <![CDATA[>]]> 0
+				</if>
+				<if test="sortingType == '활중' and search_category == '선택'">
+					AND AUTH=4
+				</if>
+				<if test="sortingType == '신고' and search_category != '선택'">
+					AND M.REPORTCOUNT <![CDATA[>]]> 0 AND
+					<if test="search_category == '이메일'">
+						M.EMAIL LIKE '%'||#{search_txt}||'%'
+					</if>
+					<if test="search_category == '닉네임'">
+						M.NICKNAME LIKE '%'||#{search_txt}||'%'
+					</if>	
+				</if>	
+				<if test="sortingType == '활중' and search_category != '선택'">
+					AND AUTH=4 AND
+					<if test="search_category == '이메일'">
+						M.EMAIL LIKE '%'||#{search_txt}||'%'
+					</if>
+					<if test="search_category == '닉네임'">
+						M.NICKNAME LIKE '%'||#{search_txt}||'%'
+					</if>	
+				</if>						
+			) A 
+			WHERE
+				 <if test="grade == 'vip'">GRADE_NAME=#{grade}</if> 
+				 <if test="grade != 'vip'">GRADE_NAME LIKE '%'||#{grade}||'%' </if> 
+		)
+	</select>
+	
+	<!-- 회원 한 명 정보 얻기 -->
+	<select id="getMemberDetail" parameterType="java.lang.String" resultMap="MemberInfo">
+		SELECT M.EMAIL, M.PWD, M.NAME, M.NICKNAME, M.POSTCODE, M.ADDRESS, M.ADDRESS_DETAIL, M.ADDRESS_REFER, M.PHONE, M.TOTALPOINT, M.POINT, M.S_POINT, M.REPORTCOUNT, M.AUTH,
+			(SELECT GRADE_NAME FROM PM_GRADE WHERE M.TOTALPOINT <![CDATA[>=]]> MIN_POINT AND TOTALPOINT <![CDATA[<=]]> MAX_POINT) AS GRADE_NAME,
+			P.MYPROFILE_IMG, P.MYAGE, P.MYSEX, P.MYINTRO,
+			F.PETPROFILE_IMG, F.PETNAME, F.PETAGE, F.PETTYPE, F.PETDETAIL, F.PETWEIGHT, F.PETSEX, F.PETTNR, F.PETINTRO
+		FROM PM_MEMBER M FULL OUTER JOIN PM_MYPROFILE P ON M.EMAIL=P.EMAIL FULL OUTER JOIN PM_PETPROFILE F ON M.EMAIL=F.EMAIL 
+		WHERE M.EMAIL=#{email}
+	</select>
+			
+	<!-- 회원 신고 내용 불러오기 -->
+	<select id="getMemberReportReason" parameterType="java.lang.String" resultType="com.petmeeting.joy.admin.model.ReportDto">
+		SELECT R.SEQ, R.BAD_EMAIL, R.EMAIL, M.NICKNAME, R.REASON
+		FROM PM_MEMBER_REPORT R JOIN PM_MEMBER M ON R.EMAIL = M.EMAIL
+		WHERE R.BAD_EMAIL=#{email}
+		ORDER BY R.SEQ ASC
+	</select>
+	
+	<!-- 회원 신고 삭제 -->
+	<delete id="deleteMemberReport" parameterType="com.petmeeting.joy.admin.model.ReportDto">
+		DELETE 
+		FROM PM_MEMBER_REPORT
+		WHERE SEQ=#{seq}
+	</delete>
+	<!-- 회원 신고 수 감소 -->
+	<update id="minusMemberReportCount" parameterType="com.petmeeting.joy.admin.model.ReportDto">
+		UPDATE PM_MEMBER
+		SET REPORTCOUNT=REPORTCOUNT-1
+		WHERE EMAIL=#{bad_email}
+	</update>
+	
+	<!-- 관리자에 의한 회원 활동중지 -->
+	<update id="pauseMember" parameterType="java.lang.String">		 		
+		UPDATE PM_MEMBER
+		SET AUTH=4		
+		WHERE EMAIL=#{email}		
+	</update>
+	
+	<!-- 활동중지 해제 -->
+	<delete id="cancelPauseMember" parameterType="java.lang.String">
+		UPDATE PM_MEMBER
+		SET AUTH=1
+		WHERE EMAIL=#{email}
+	</delete>
+	
+	<!-- leavemember테이블에 있는 회원인지 확인 -->
+	<select id="leaveMemberCheck" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT COUNT(*)
+		FROM PM_LEAVEMEMBER
+		WHERE EMAIL=#{email}
+	</select>
+	
+	<!-- 회원 프로필 작성 체크 -->
+	<select id="memberProfileCheck" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT COUNT(*)
+		FROM PM_MYPROFILE
+		WHERE EMAIL=#{email}
+	</select>
+	<!-- 펫 프로필 작성 체크 -->
+	<select id="petProfileCheck" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT COUNT(*)
+		FROM PM_PETPROFILE
+		WHERE EMAIL=#{email}
+	</select>
+	
+	
+	<!-- 행사게시판 글 등록 -->
+	<insert id="insertEventboard" parameterType="com.petmeeting.joy.admin.model.EventboardDto">
+		INSERT INTO PM_EVENTBOARD(SEQ, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, EVENT_SDATE, EVENT_EDATE, REGDATE)
+		VALUES(PM_EVENTBOARD_SEQ.NEXTVAL, #{title}, #{content}, #{filename}, #{location}, #{location_detail}, #{event_sdate}, #{event_edate}, SYSDATE)	
+	</insert>
+	
+	<!-- 행사게시판 글 목록 -->
+	<select id="getEventList" resultType="com.petmeeting.joy.admin.model.EventboardDto">
+		SELECT SEQ, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, EVENT_SDATE, EVENT_EDATE, REGDATE
+		FROM PM_EVENTBOARD
+	</select>
+	
+	<!-- 행사게시판 목록(월별) -->
+	<select id="getMonthlyEventList" parameterType="java.lang.String" resultType="com.petmeeting.joy.admin.model.EventboardDto">
+		SELECT SEQ, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, EVENT_SDATE, EVENT_EDATE, REGDATE
+		FROM PM_EVENTBOARD
+		WHERE TO_CHAR(EVENT_SDATE,'YYYYMM')=#{date}
+		ORDER BY EVENT_SDATE ASC
+	</select>
+	
+	<!-- 행사게시판 디테일 -->
+	<select id="getEventDetail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.admin.model.EventboardDto">
+		SELECT SEQ, TITLE, CONTENT, FILENAME, LOCATION, LOCATION_DETAIL, EVENT_SDATE, EVENT_EDATE, REGDATE
+		FROM PM_EVENTBOARD
+		WHERE SEQ=#{seq}
+	</select>
+	
+	<!-- 행사게시판 삭제 -->
+	<delete id="eventDelete" parameterType="java.lang.Integer">
+		DELETE 
+		FROM PM_EVENTBOARD
+		WHERE SEQ=#{seq}
+	</delete>
+	
+	<!-- 행사게시판 수정 -->
+	<update id="eventUpdate" parameterType="com.petmeeting.joy.admin.model.EventboardDto">
+		UPDATE PM_EVENTBOARD
+		SET TITLE=#{title}, CONTENT=#{content}, FILENAME=#{filename}, LOCATION=#{location}, LOCATION_DETAIL=#{location_detail},  
+			EVENT_SDATE=#{event_sdate}, EVENT_EDATE=#{event_edate}
+		WHERE SEQ=#{seq}
+	</update>
+	
+	
+	
+	
+
+
+	<!-- fundingList 추가 -->
+	<insert id="addFunding" parameterType="com.petmeeting.joy.funding.model.FundingDto">
+		INSERT INTO PM_FUNDINGBOARD(SEQ, BOARD_CODE, EMAIL, TITLE, INTRO, CONTENT, THUMBNAIL, MAX_PRICE, CURRENT_PRICE, PERSONCOUNT, LIKECOUNT, READCOUNT,SDATE, EDATE, REGDATE)
+		VALUES(PM_FUNDINGBOARD_SEQ.NEXTVAL, 'FUND', #{email}, #{title}, #{intro}, #{content}, #{thumbnail}, #{max_price}, 0, 0, 0, 0, #{sdate}, #{edate}, SYSDATE)
+	</insert>
+
+	
+	<!-- funding 리스트목록 -->
+	<select id="getFundingList" parameterType="com.petmeeting.joy.funding.model.fundingBean" resultType="com.petmeeting.joy.funding.model.FundingDto">
+		SELECT * FROM(SELECT ROW_NUMBER()OVER(ORDER BY REGDATE DESC)AS RNUM,
+				SEQ, BOARD_CODE, EMAIL, TITLE, INTRO, CONTENT, THUMBNAIL, MAX_PRICE, CURRENT_PRICE,
+				PERSONCOUNT, LIKECOUNT, READCOUNT, SDATE, EDATE, REGDATE
+				FROM PM_FUNDINGBOARD
+		WHERE 1=1
+		<if test="f_categorys == '진행'">
+		AND EDATE <![CDATA[>=]]> SYSDATE
+		AND	CURRENT_PRICE <![CDATA[<]]> MAX_PRICE
+		</if>
+		<if test="f_categorys == '마감'">
+		AND (EDATE <![CDATA[<]]> SYSDATE
+		OR CURRENT_PRICE <![CDATA[=]]> MAX_PRICE)	
+		</if>
+		
+		<if test="f_keyword != null and f_keyword !=''">
+		AND TITLE LIKE '%'||#{f_keyword}||'%'
+		</if>
+		)
+		WHERE RNUM BETWEEN ${start} AND ${end}			
+	</select>
+	
+	<!-- funding 리스트 수 가지고오기 -->
+	<select id="getFundingCount" parameterType="com.petmeeting.joy.funding.model.fundingBean" resultType="java.lang.Integer">
+		SELECT NVL(COUNT(*),0) AS CNT
+		FROM PM_FUNDINGBOARD
+		
+		WHERE 1=1
+		<if test="f_categorys == '진행'">
+		AND EDATE <![CDATA[>=]]> SYSDATE
+		AND	CURRENT_PRICE <![CDATA[<]]> MAX_PRICE
+		</if>
+		<if test="f_categorys == '마감'">
+		AND (EDATE <![CDATA[<]]> SYSDATE
+		OR CURRENT_PRICE <![CDATA[=]]> MAX_PRICE)	
+		</if>
+		<if test="f_keyword != null and f_keyword !=''">
+		AND TITLE LIKE '%'||#{f_keyword}||'%'
+		</if>
+	</select>
+	
+	<!-- fundingDetail 보기  -->
+	<select id="adminfundingDetail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.funding.model.FundingDto">
+		SELECT SEQ, BOARD_CODE, EMAIL, TITLE, INTRO, CONTENT, THUMBNAIL, MAX_PRICE, CURRENT_PRICE, PERSONCOUNT, LIKECOUNT, READCOUNT, SDATE, EDATE, REGDATE
+		FROM PM_FUNDINGBOARD
+		WHERE SEQ=#{seq}
+	</select>
+	
+	<!-- funding 글 삭제 -->
+	<delete id="fundingDelete" parameterType="java.lang.Integer">
+		DELETE FROM PM_FUNDINGBOARD
+		WHERE SEQ=#{seq}
+	</delete>
+	
+	<!-- funding 내역서 삭제 -->
+	<delete id="fundingStaDel" parameterType="java.lang.Integer">
+		DELETE FROM PM_FUNDING_STA
+		WHERE SEQ=#{seq}
+	</delete>
+	
+	<!-- fundingMem 삭제 (글삭제하기위한) -->
+	<delete id="fundingMemDel" parameterType="java.lang.Integer">
+		DELETE FROM PM_FUNDINGMEM
+		WHERE FUNDING_SEQ=#{funding_seq}
+	</delete>
+	
+
+	<!-- funding 수정 -->
+	<update id="fundingUpdate" parameterType="com.petmeeting.joy.funding.model.FundingDto">
+		UPDATE PM_FUNDINGBOARD
+		SET TITLE=#{title},INTRO=#{intro},CONTENT=#{content},MAX_PRICE=#{max_price},SDATE=#{sdate},EDATE=#{edate}
+		<if test="thumbnail != null and thumbnail != ''">
+		,THUMBNAIL=#{thumbnail}
+		</if>
+		WHERE SEQ=#{seq}
+	</update>
+
+	<!-- 내역서 저장 -->
+	<insert id="addfundingSta" parameterType="com.petmeeting.joy.funding.model.FundingStaDto">
+		INSERT INTO PM_FUNDING_STA(SEQ,EMAIL,CONTENT)
+		VALUES(#{seq},#{email},#{content})
+	</insert>
+
+	<!-- 내역서 썼는지 check -->
+	<select id="fundingStacheck" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		SELECT COUNT(*) FROM PM_FUNDING_STA
+		WHERE SEQ=#{seq}
+	</select> 
+	
+	<!--후원한 사람 list -->
+	<select id="whofundingMem" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.admin.model.FundMemberDto">
+		SELECT F.MYPROFILE_IMG, G.NICKNAME, G.EMAIL, M.DONATION, M.D_DATE, G.NAME, M.FUNDING_SEQ
+		FROM PM_MYPROFILE F,PM_FUNDINGMEM M , PM_MEMBER G
+		WHERE F.EMAIL = M.EMAIL AND M.EMAIL = G.EMAIL AND M.FUNDING_SEQ = #{funding_seq}
+	</select>
+	
+	<!-- 후원 내역서 올릴때 후원한 회원들 한테 쪽지보내기 -->
+	<insert id="sendMsgFundMem" parameterType="java.util.List">
+		INSERT INTO PM_SENDMSG(SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK)
+				SELECT PM_SENDMSG_SEQ.NEXTVAL, A.*
+		FROM(
+		<foreach collection="list" item="msgList" separator="UNION ALL ">
+		SELECT
+		#{msgList.to_email}, 'admin', #{msgList.content}, SYSDATE, NULL, 1, 0
+		FROM DUAL
+		</foreach>
+		) A
+	</insert>
+	
+	<!-- 후원 내역서 올릴때 후원한 회원들 한테 보낸 쪽지 받기 -->
+	<insert id="revMsgFundMem" parameterType="java.util.List">	
+		INSERT INTO PM_REVMSG(SEQ, TO_EMAIL, FROM_EMAIL, CONTENT, SENDDATE, READDATE, IMPORTANT, READCHECK)	
+		SELECT PM_REVMSG_SEQ.NEXTVAL, A.*
+		FROM(
+		<foreach collection="list" item="msgList" separator="UNION ALL ">
+		SELECT
+		#{msgList.to_email}, 'admin', #{msgList.content}, SYSDATE, NULL, 1, 0
+		FROM DUAL
+		</foreach>
+		) A
+	</insert>
+	
+	<!-- 공지 글쓰기 -->
+	<insert id="noticeWrite" parameterType="com.petmeeting.joy.admin.model.NoticeBoardDto">
+		INSERT INTO PM_NOTICEBOARD(SEQ, BOARD_CODE, CATEGORY, EMAIL, TITLE, CONTENT, REGDATE, READCOUNT)
+		VALUES(PM_NOTICEBOARD_SEQ.NEXTVAL, 'NOTICE',#{category} ,#{email}, #{title}, #{content}, SYSDATE, 0)
+	</insert>
+	
+	<!-- 공지 리스트 -->
+	<select id="getnoticeList" resultType="com.petmeeting.joy.admin.model.NoticeBoardDto" parameterType="com.petmeeting.joy.funding.model.fundingBean">
+		SELECT * FROM(SELECT ROW_NUMBER()OVER(ORDER BY REGDATE DESC)AS RNUM, SEQ, BOARD_CODE, CATEGORY, EMAIL, TITLE, CONTENT, REGDATE, READCOUNT 
+		FROM PM_NOTICEBOARD
+		WHERE 1=1
+		<if test="f_categorys != null and f_categorys !=''">
+			AND CATEGORY LIKE '%'||#{f_categorys}||'%'
+		</if>
+		<if test="f_keyword != null and f_keyword != ''">
+			AND TITLE LIKE '%'||#{f_keyword}||'%'	
+		</if>
+		)
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	
+	<!-- 공지리스트 페이징 -->
+	<select id="noticeListcount" resultType="java.lang.Integer" parameterType="com.petmeeting.joy.funding.model.fundingBean">
+		SELECT COUNT(*) FROM(SELECT ROW_NUMBER()OVER(ORDER BY REGDATE)AS RNUM, SEQ, BOARD_CODE, CATEGORY, EMAIL, TITLE, CONTENT, REGDATE, READCOUNT 
+		FROM PM_NOTICEBOARD
+		WHERE 1=1
+		<if test="f_categorys != null and f_categorys !=''">
+			AND CATEGORY LIKE '%'||#{f_categorys}||'%'
+		</if>
+		<if test="f_keyword != null and f_keyword != ''">
+			AND TITLE LIKE '%'||#{f_keyword}||'%'	
+		</if>
+		)
+	</select>
+	
+	<!-- 공지 디테일 -->
+	<select id="noticeDetail" parameterType="java.lang.Integer" resultType="com.petmeeting.joy.admin.model.NoticeBoardDto">
+		SELECT SEQ, BOARD_CODE, CATEGORY, EMAIL, TITLE, CONTENT, REGDATE, READCOUNT
+		FROM PM_NOTICEBOARD
+		WHERE SEQ=#{seq}
+	</select>
+	
+	<!-- 공지삭제 -->
+	<delete id="noticeDelete" parameterType="java.lang.Integer">
+		DELETE FROM PM_NOTICEBOARD
+		WHERE SEQ=#{seq}
+	</delete>
+	
+	<!-- 공지수정 -->
+	<update id="noticeUpdate" parameterType="com.petmeeting.joy.admin.model.NoticeBoardDto">
+		UPDATE PM_NOTICEBOARD
+		SET 
+		CATEGORY=#{category}, TITLE=#{title}, CONTENT=#{content}, REGDATE=SYSDATE
+		WHERE SEQ=#{seq}
+	</update>
+
+	<!-- 공지 ReadCount -->
+      <update id="noticeReadCount" parameterType="java.lang.Integer">
+      UPDATE PM_NOTICEBOARD
+      SET READCOUNT = READCOUNT+1
+      WHERE SEQ=#{seq}
+      </update>
+      
+      <!-- 오늘 올라온 소모임 수 -->
+	<select id="getTodayPlay" resultType="java.lang.Integer">
+		SELECT NVL(COUNT(*), 0) FROM PM_PLAYBOARD
+		WHERE SUBSTR(REGDATE, 1, 9) = SUBSTR(SYSDATE, 1, 9)
+	</select>
+	
+      <!-- 오늘 올라온 자유 게시판 수 -->
+	<select id="getTodayFree" resultType="java.lang.Integer">
+		SELECT NVL(COUNT(*), 0) FROM PM_FREEBOARD
+		WHERE SUBSTR(REGDATE, 1, 9) = SUBSTR(SYSDATE, 1, 9)
+	</select>
+	
+	<!-- 오늘 마감된 후원 수-->
+	<select id="getTodayEndFunding" resultType="java.lang.Integer">
+		SELECT NVL(COUNT(*), 0) FROM PM_FUNDINGBOARD
+		WHERE SUBSTR(EDATE, 1, 9) = SUBSTR(SYSDATE, 1, 9)
+	</select>
+	
+	<!-- 많이 신고 된 순으로 회원 5명 -->
+	<select id="getReportTop5" resultType="com.petmeeting.joy.admin.model.AdminMemberDto">
+		SELECT EMAIL, NAME, NICKNAME, REPORTCOUNT
+		FROM (SELECT ROW_NUMBER()OVER(ORDER BY REPORTCOUNT DESC) AS RNUM, EMAIL, NAME, NICKNAME, REPORTCOUNT
+			FROM PM_MEMBER
+			WHERE REPORTCOUNT > 0)
+			WHERE RNUM BETWEEN 1 AND 5
+		ORDER BY REPORTCOUNT DESC
+	</select>
+
+
+      <select id="memleavelistadmin" parameterType="com.petmeeting.joy.admin.model.Memberleaveparam"
+          resultType="com.petmeeting.joy.admin.model.Memberleaveparam">
+            
+            SELECT EMAIL, REASON FROM
+			(SELECT ROW_NUMBER()OVER(ORDER BY EMAIL DESC)AS RNUM,
+			EMAIL,REASON FROM PM_LEAVEMEMBER
+			WHERE 1=1 
+			
+				<if test="category == '시간'">
+				AND REASON LIKE '%시간%'
+				</if>
+				<if test="category == '정보부족'">
+				AND REASON LIKE '%정보부족%'
+				</if>
+				<if test="category == '스팸'">
+				AND REASON LIKE '%스팸%'
+				</if>
+				<if test="category == '이메일변경'">
+				AND REASON LIKE '%이메일변경%'
+				</if>
+				<if test="category == '기타'">
+				AND REASON LIKE '%기타%'
+				</if>
+				<if test="category == '관리자권한'">
+				AND REASON LIKE '%관리자%'
+				</if>
+				<if test="search_category == '이메일' and keyword!= null and keyword!='' " >
+				AND EMAIL LIKE '%'||#{keyword}||'%'
+				</if>
+		
+			)
+			WHERE RNUM BETWEEN ${start} AND ${end}	     
+      </select>
+
+
+      <select id="memleavelistcountadmin" parameterType="com.petmeeting.joy.admin.model.Memberleaveparam"
+          resultType="java.lang.Integer">
+            
+            SELECT COUNT(*) FROM
+			(SELECT ROW_NUMBER()OVER(ORDER BY EMAIL DESC)AS RNUM,
+			EMAIL,REASON FROM PM_LEAVEMEMBER
+			WHERE 1=1 
+			<if test="category == '시간'">
+			AND REASON LIKE '%시간%'
+			</if>
+			<if test="category == '정보부족'">
+			AND REASON LIKE '%정보부족%'
+			</if>
+			<if test="category == '스팸'">
+			AND REASON LIKE '%스팸%'
+			</if>
+			<if test="category == '이메일변경'">
+			AND REASON LIKE '%이메일변경%'
+			</if>
+			<if test="category == '기타'">
+			AND REASON LIKE '%기타%'
+			</if>
+			<if test="category == '관리자권한'">
+			AND REASON LIKE '%관리자%'
+			</if>
+			<if test="search_category == '이메일' and keyword!= null and keyword!='' " >
+			AND EMAIL LIKE '%'||#{keyword}||'%'
+			</if>
+			)  
+		
+      </select>
+
+
+</mapper>

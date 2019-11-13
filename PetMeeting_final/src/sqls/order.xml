@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Order">
+
+<!-- 상품코드, 사이즈, 색깔을 이용해 상품의 시퀀스를 가져옴 -->
+<select id="getProductOptionSeq" parameterType="com.petmeeting.joy.store.model.OrderBean"
+		resultType="java.lang.Integer">
+SELECT SEQ FROM PM_PRODUCT_OPTION
+WHERE PRODUCTCODE=#{productcode} AND PSIZE=#{psize} AND PCOLOR=#{pcolor}
+</select>
+
+<!-- 상품 주문 완료 -->
+<insert id="addOrder" parameterType="com.petmeeting.joy.store.model.OrderDto">
+INSERT INTO PM_ORDER_DETAIL(SEQ, PRODUCT_OPTION_SEQ, EMAIL, QUANTITY, TOTALPRICE, ORDERNUMBER, STATUS)
+VALUES(PM_ORDER_DETAIL_SEQ.NEXTVAL, #{product_option_seq}, #{email}, #{quantity}, #{totalprice}, #{ordernumber}, 0)
+</insert>
+
+<!-- 상품코드, 사이즈, 색깔을 이용해 상품의 총 수량 가져옴 -->
+<select id="getProductOptionQuantity" parameterType="com.petmeeting.joy.store.model.ProductOptionDto"
+		resultType="java.lang.Integer">
+SELECT PQUANTITY FROM PM_PRODUCT_OPTION 
+WHERE PRODUCTCODE=#{productcode} AND PSIZE=#{psize} AND PCOLOR=#{pcolor}
+</select>
+
+<!-- 상품 주문시 상품의 총 수량에서 주문 한 수량 삭제 -->
+<update id="minusPQuantity" parameterType="com.petmeeting.joy.store.model.ProductOptionDto">
+UPDATE PM_PRODUCT_OPTION SET PQUANTITY = PQUANTITY - #{quantity}
+WHERE PRODUCTCODE=#{productcode} AND PSIZE=#{psize} AND PCOLOR=#{pcolor}
+</update>
+
+<!-- 주문한 상품에 대한  수령인 정보 저장하는 메소드 -->
+<insert id="addOrderDetail" parameterType="com.petmeeting.joy.store.model.OrderInfoDto">
+INSERT INTO PM_ORDER(ORDERNUMBER, EMAIL, RNAME, RPOSTCODE, RADDRESS, RADDRESS_DETAIL, RPHONE, REQUIRE, ORDERDATE, STATUS, TOTALPRICE, USE_POINT)
+VALUES(#{ordernumber}, #{email}, #{rname}, #{rpostcode}, #{raddress}, #{raddress_detail}, #{rphone}, #{require}, SYSDATE, 0, #{totalprice}, #{use_point})
+</insert>
+
+<!-- 주문번호를 통해 주문상품 리스트 보여주는 메소드 -->
+<select id="getOrderDetailList" parameterType="com.petmeeting.joy.store.model.OrderInfoDto"
+		resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT D.EMAIL, D.RNAME, D.RPOSTCODE, D.RADDRESS, D.RADDRESS_DETAIL, D.RPHONE, 
+		D.REQUIRE, D.ORDERDATE, D.STATUS, D.TOTALPRICE, O.ORDERNUMBER, O.QUANTITY, P.SEQ, P.PSIZE, 
+		P.PCOLOR, G.PRODUCTCODE, G.PRODUCTNAME, G.PRICE, G.FILENAME, O.STATUS AS REFUND_STATUS
+FROM PM_ORDER D, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION P, PM_PRODUCT G
+WHERE D.ORDERNUMBER = O.ORDERNUMBER
+	AND O.PRODUCT_OPTION_SEQ = P.SEQ
+	AND P.PRODUCTCODE = G.PRODUCTCODE
+	AND D.ORDERNUMBER = #{ordernumber}
+</select>
+
+<!-- 나의 배송준비중 주문 카운트 -->
+<select id="getMyorderReadyCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE EMAIL=#{email} AND STATUS=0
+</select>
+<!-- 나의 배송중 주문 카운트 -->
+<select id="getMyorderDeliveryCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE EMAIL=#{email} AND STATUS=1
+</select>
+<!-- 나의 배송완료 주문 카운트 -->
+<select id="getMyorderCompleteCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE EMAIL=#{email} AND STATUS=2
+</select>
+
+<!-- 나의 주문 내역 최근 5개 뽑아오기 -->
+<select id="getMyorderListLatest" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT ORDERNUMBER, ORDERDATE, STATUS, TOTALPRICE
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY ORDERDATE DESC) RNUM, ORDERNUMBER, ORDERDATE, STATUS, TOTALPRICE
+		FROM PM_ORDER
+		WHERE EMAIL=#{email})
+WHERE RNUM BETWEEN 1 AND 5
+</select>
+
+<select id="getTotalPrice" parameterType="com.petmeeting.joy.store.model.OrderDto"
+	resultType="java.lang.Integer">
+SELECT SUM(TOTALPRICE) FROM PM_ORDER_DETAIL
+WHERE ORDERNUMBER=#{ordernumber}
+</select>
+
+<!-- 주문한 상품들에 대한 총 적립금 -->
+<select id="getOrderPoint" parameterType="com.petmeeting.joy.store.model.OrderInfoDto"
+		resultType="java.lang.Integer">
+SELECT TOTALPRICE * 0.05 FROM PM_ORDER
+WHERE ORDERNUMBER = #{ordernumber}
+</select>
+
+<!-- 적립금 업데이트 -->
+<update id="savePoint" parameterType="com.petmeeting.joy.login.model.MemberDto">
+UPDATE PM_MEMBER SET
+<if test="use_point == 0">S_POINT = S_POINT + #{savepoint}</if>
+<if test="use_point != 0">S_POINT = S_POINT - #{use_point} + #{savepoint}</if>
+WHERE EMAIL = #{email}
+</update>
+
+<!-- 검색된 기간별 리스트 -->
+<select id="orderRefernce" parameterType="com.petmeeting.joy.store.model.OrderParam"
+		resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT ORDERNUMBER, ORDERDATE, STATUS, TOTALPRICE
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY D.ORDERDATE DESC) RNUM, D.ORDERNUMBER, D.ORDERDATE, D.STATUS, D.TOTALPRICE
+		FROM PM_ORDER D
+		WHERE D.EMAIL=#{email}
+		<if test="startdate != null and enddate != null and startdate != '' and enddate != ''">
+		AND <![CDATA[SUBSTR(ORDERDATE, 1, 9) >= TO_DATE(#{startdate}, 'YYYY-MM-DD')
+		AND SUBSTR(ORDERDATE, 1, 9) <= TO_DATE(#{enddate}, 'YYYY-MM-DD')]]>
+		</if>
+		<if test="status == 0">		<!-- 배송준비, 배송중, 완료일 때 -->
+		AND (D.STATUS = 0 OR D.STATUS = 1 OR D.STATUS = 2)
+		</if>
+		<if test="status == 3">		<!-- 주문 취소일 때 -->
+		AND D.STATUS = 3
+		</if>
+		)
+WHERE RNUM BETWEEN ${start} AND ${end}
+</select>
+
+
+<select id="getOrderCount" parameterType="com.petmeeting.joy.store.model.OrderParam"
+		resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) AS CNT
+FROM PM_ORDER D
+	WHERE D.EMAIL=#{email}
+	<if test="startdate != null and enddate != null and startdate != '' and enddate != ''">
+	AND <![CDATA[SUBSTR(ORDERDATE, 1, 9) >= TO_DATE(#{startdate}, 'YYYY-MM-DD')
+	AND SUBSTR(ORDERDATE, 1, 9) <= TO_DATE(#{enddate}, 'YYYY-MM-DD')]]>
+	</if>
+	<if test="status == 0">
+	AND (D.STATUS = 0 OR D.STATUS = 1 OR D.STATUS = 2)
+	</if>
+	<if test="status == 3">
+	AND D.STATUS = 3
+	</if>
+</select>
+
+<!-- 나의 주문한 상품 리스트 뽑아오기 -->
+<select id="getMyorderListReview" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT O.ORDER_SEQ, O.ORDERNUMBER, O.SEQ, O.PRODUCTCODE, O.PRODUCTNAME, O.FILENAME, O.PSIZE, O.PCOLOR, O.ORDERDATE
+FROM PM_REVIEW R
+RIGHT JOIN (
+SELECT A.SEQ AS ORDER_SEQ, A.ORDERNUMBER, B.SEQ, B.PRODUCTCODE, PRODUCTNAME, C.FILENAME, PSIZE, PCOLOR, ORDERDATE
+FROM PM_ORDER_DETAIL A, PM_PRODUCT_OPTION B, PM_PRODUCT C, PM_ORDER D
+WHERE A.EMAIL=#{email} AND B.SEQ = PRODUCT_OPTION_SEQ
+	AND B.PRODUCTCODE = C.PRODUCTCODE
+	AND D.ORDERNUMBER = A.ORDERNUMBER
+	AND D.STATUS = 2) O
+ON R.ORDER_SEQ = O.ORDER_SEQ
+WHERE R.ORDER_SEQ IS NULL
+ORDER BY O.ORDER_SEQ DESC
+</select>
+
+<!-- 주문 취소 (취소 상태로 바꿔줌/ 적립포인트 변경/ 사용한 포인트 가져옴) -->
+<update id="orderCancel" parameterType="com.petmeeting.joy.store.model.OrderInfoDto">
+UPDATE PM_ORDER SET STATUS = 3
+WHERE ORDERNUMBER = #{ordernumber}
+</update>
+
+<update id="cancelPoint" parameterType="com.petmeeting.joy.login.model.MemberDto">
+UPDATE PM_MEMBER SET 
+<if test="use_point == 0 ">S_POINT = S_POINT - #{savepoint}</if>
+<if test="use_point != 0 ">S_POINT = S_POINT - #{savepoint} + #{use_point}</if>
+WHERE EMAIL=#{email}
+</update>
+
+<select id="getUse_Point" parameterType="com.petmeeting.joy.store.model.OrderInfoDto"
+		resultType="java.lang.Integer">
+SELECT USE_POINT FROM PM_ORDER
+WHERE ORDERNUMBER = #{ordernumber}
+</select>
+
+<!-- 반품 및 교환 가능한 주문번호 불러오기 (배송완료된 상품만) -->
+<select id="getRefundList" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT O.ORDERNUMBER
+FROM PM_ORDER O, PM_ORDER_DETAIL D
+WHERE O.ORDERNUMBER = D.ORDERNUMBER
+AND O.STATUS = 2
+AND D.STATUS = 0
+AND O.EMAIL=#{email}
+GROUP BY O.ORDERNUMBER
+</select>
+
+<!-- 선택한 주문번호로 반품상품 선택하기 위한 리스트 -->
+<select id="getOrderRefundList" parameterType="com.petmeeting.joy.store.model.OrderInfoDto"
+		resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT P.SEQ, O.SEQ AS ORDER_SEQ, D.EMAIL, D.RNAME, D.RPOSTCODE, D.RADDRESS, D.RADDRESS_DETAIL, D.RPHONE, 
+		D.REQUIRE, D.ORDERDATE, D.STATUS, G.PRICE, D.TOTALPRICE, O.ORDERNUMBER, O.QUANTITY, P.PSIZE, 
+		P.PCOLOR, G.PRODUCTCODE, G.PRODUCTNAME, G.PRICE, G.FILENAME 
+FROM PM_ORDER D, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION P, PM_PRODUCT G
+WHERE D.ORDERNUMBER = O.ORDERNUMBER
+	AND O.PRODUCT_OPTION_SEQ = P.SEQ
+	AND P.PRODUCTCODE = G.PRODUCTCODE
+	AND O.ORDERNUMBER =#{ordernumber}
+	AND O.STATUS = 0
+</select>
+
+<insert id="addRefund" parameterType="com.petmeeting.joy.store.model.RefundDto">
+INSERT INTO PM_REFUND(SEQ, EMAIL, ORDER_SEQ, REFUND_SELECT, REASON, REASON_DETAIL, FILENAME,  REFUND_DATE)
+VALUES(PM_REFUND_SEQ.NEXTVAL, #{email}, #{order_seq}, #{refund_select}, #{reason}, #{reason_detail}, #{filename}, SYSDATE)
+</insert>
+ 
+<!-- 반품일 때 status = 1, 교환일 때 status = 4 -->
+<update id="updateStatus" parameterType="com.petmeeting.joy.store.model.OrderDto">
+UPDATE PM_ORDER_DETAIL SET 
+<if test="refund_select == '반품'">
+STATUS = 1
+</if>
+<if test="refund_select == '교환'">
+STATUS = 4
+</if>
+WHERE SEQ =#{seq}
+</update>
+
+<!-- 반품/교환 내역리스트 -->
+<select id="getRefundBreakdown" parameterType="com.petmeeting.joy.store.model.OrderParam" resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT RNUM, ORDERNUMBER, PRODUCT_OPTION_SEQ, STATUS, PSIZE, PCOLOR, PRODUCTCODE, PRODUCTNAME, REFUND_DATE
+FROM (SELECT ROW_NUMBER()OVER (ORDER BY R.REFUND_DATE DESC) RNUM, O.ORDERNUMBER, O.PRODUCT_OPTION_SEQ, O.STATUS, P.PSIZE, P.PCOLOR, G.PRODUCTCODE, G.PRODUCTNAME, R.REFUND_DATE
+		FROM PM_ORDER_DETAIL O, PM_ORDER D, PM_PRODUCT_OPTION P, PM_PRODUCT G, PM_REFUND R
+		WHERE O.ORDERNUMBER = D.ORDERNUMBER
+		AND O.PRODUCT_OPTION_SEQ = P.SEQ
+		AND P.PRODUCTCODE = G.PRODUCTCODE
+		AND O.SEQ = R.ORDER_SEQ
+		AND O.STATUS != 0
+		AND O.EMAIL = #{email}
+	<if test="startdate != null and enddate != null and startdate != '' and enddate != ''">
+		AND <![CDATA[SUBSTR(REFUND_DATE, 1, 9) >= TO_DATE(#{startdate}, 'YYYY-MM-DD')
+		AND SUBSTR(REFUND_DATE, 1, 9) <= TO_DATE(#{enddate}, 'YYYY-MM-DD')]]>
+	</if>)
+WHERE RNUM BETWEEN ${start} AND ${end}
+</select>
+
+<select id="getRefundCount" parameterType="com.petmeeting.joy.store.model.OrderParam"
+		resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) AS CNT
+FROM PM_REFUND
+WHERE EMAIL=#{email}
+	<if test="startdate != null and enddate != null and startdate != '' and enddate != ''">
+	AND <![CDATA[SUBSTR(REFUND_DATE, 1, 9) >= TO_DATE(#{startdate}, 'YYYY-MM-DD')
+	AND SUBSTR(REFUND_DATE, 1, 9) <= TO_DATE(#{enddate}, 'YYYY-MM-DD')]]>
+	</if>
+</select>
+
+
+<!-- 관리자 xml -->
+<select id="getAdminOrderList" parameterType="com.petmeeting.joy.store.model.OrderParam"
+	resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT ORDERNUMBER, ORDERDATE, STATUS, RNAME, TOTALPRICE
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY ORDERDATE DESC) RNUM, D.ORDERNUMBER, D.ORDERDATE, D.STATUS, D.RNAME, D.TOTALPRICE
+		FROM PM_ORDER D
+		WHERE 1=1
+		<if test="sorting_category != '' and sorting_category != null">
+		AND D.STATUS = #{sorting_category}
+		</if>
+		<if test="s_keyword != '' and s_keyword != null">
+			<if test="search_category == '주문번호'">
+			AND D.ORDERNUMBER LIKE '%' || #{s_keyword} || '%'
+			</if>
+			<if test="search_category == '주문자명'">
+			AND D.RNAME LIKE '%' || #{s_keyword} || '%'
+			</if>
+		</if>
+		)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<select id="getAdminOrderListCount" parameterType="com.petmeeting.joy.store.model.OrderParam"
+	resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) AS CNT
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY ORDERDATE DESC) RNUM, D.ORDERNUMBER, D.ORDERDATE, D.STATUS, D.RNAME, D.TOTALPRICE
+		FROM PM_ORDER D
+		WHERE 1=1
+		<if test="sorting_category != '' and sorting_category != null">
+		AND D.STATUS = #{sorting_category}
+		</if>
+		<if test="s_keyword != '' and s_keyword != null">
+			<if test="search_category == '주문번호'">
+			AND D.ORDERNUMBER LIKE '%' || #{s_keyword} || '%'
+			</if>
+			<if test="search_category == '주문자명'">
+			AND D.RNAME LIKE '%' || #{s_keyword} || '%'
+			</if>
+		</if>
+		)
+</select>
+
+<update id="updateOrderStatus" parameterType="java.lang.String">
+UPDATE PM_ORDER SET STATUS = 1
+WHERE ordernumber = #{ordernumber}
+</update>
+
+<!-- 반품/교환 상품 정보 -->
+<select id="getAdminOrderDetailList" parameterType="java.lang.Integer"
+		resultType="com.petmeeting.joy.store.model.RefundDto">
+SELECT D.EMAIL, D.RNAME, D.RPOSTCODE, D.RADDRESS, D.RADDRESS_DETAIL, D.RPHONE,
+		D.REQUIRE, D.ORDERDATE, D.STATUS, D.TOTALPRICE, O.ORDERNUMBER, O.QUANTITY, P.SEQ, P.PSIZE, 
+		P.PCOLOR, G.PRODUCTCODE, G.PRODUCTNAME, G.PRICE, G.FILENAME 
+FROM PM_ORDER_DETAIL O, PM_ORDER D, PM_PRODUCT_OPTION P, PM_PRODUCT G
+WHERE  D.ORDERNUMBER = O.ORDERNUMBER
+	AND O.PRODUCT_OPTION_SEQ = P.SEQ
+	AND P.PRODUCTCODE = G.PRODUCTCODE
+	AND O.REFUND_SEQ = #{seq}
+</select>
+
+<!-- 반품/교환목록 가져옴 -->
+<select id="getAdminRefundList" parameterType="com.petmeeting.joy.store.model.OrderParam"
+	resultType="com.petmeeting.joy.store.model.RefundDto">
+SELECT REFUND_SEQ, EMAIL, ORDERNUMBER, RNAME, ORDER_SEQ, REFUND_SELECT, REASON, REASON_DETAIL, STATUS, FILENAME, REFUND_DATE
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY REFUND_DATE DESC) RNUM, O.REFUND_SEQ, R.EMAIL, D.RNAME, O.ORDERNUMBER, R.ORDER_SEQ, R.REFUND_SELECT, R.REASON, R.REASON_DETAIL, O.STATUS, R.FILENAME, R.REFUND_DATE
+	FROM PM_REFUND R, PM_ORDER_DETAIL O, PM_ORDER D
+	WHERE O.SEQ = R.ORDER_SEQ
+	AND O.ORDERNUMBER = D.ORDERNUMBER
+		<if test="sorting_category != '' and sorting_category != null">
+		AND O.STATUS = #{sorting_category}
+		</if>
+		<if test="s_keyword != '' and s_keyword != null">
+			<if test="search_category == '주문번호'">
+			AND O.ORDERNUMBER LIKE '%' || #{s_keyword} || '%'
+			</if>
+			<if test="search_category == '주문자명'">
+			AND D.RNAME LIKE '%' || #{s_keyword} || '%'
+			</if>
+		</if>
+		)		
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+
+<select id="getAdminRefundCount" parameterType="com.petmeeting.joy.store.model.OrderParam"
+	resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) AS CNT
+FROM (SELECT ROW_NUMBER()OVER(ORDER BY REFUND_DATE DESC) RNUM, O.REFUND_SEQ, R.EMAIL, D.RNAME, O.ORDERNUMBER, R.ORDER_SEQ, R.REFUND_SELECT, R.REASON, R.REASON_DETAIL, O.STATUS, R.FILENAME, R.REFUND_DATE
+	FROM PM_REFUND R, PM_ORDER_DETAIL O, PM_ORDER D
+	WHERE O.SEQ = R.ORDER_SEQ
+	AND O.ORDERNUMBER = D.ORDERNUMBER
+		<if test="sorting_category != '' and sorting_category != null">
+		AND O.STATUS = #{sorting_category}
+		</if>
+		<if test="s_keyword != '' and s_keyword != null">
+			<if test="search_category == '주문번호'">
+			AND O.ORDERNUMBER LIKE '%' || #{s_keyword} || '%'
+			</if>
+			<if test="search_category == '주문자명'">
+			AND D.RNAME LIKE '%' || #{s_keyword} || '%'
+			</if>
+		</if>
+	)
+</select>
+
+<update id="updateRefundSeq" parameterType="com.petmeeting.joy.store.model.OrderDto">
+UPDATE PM_ORDER_DETAIL O SET REFUND_SEQ = (SELECT MAX(SEQ) FROM PM_REFUND R)
+WHERE SEQ = #{seq}
+</update>
+
+<select id="getRefundProductList" parameterType="com.petmeeting.joy.store.model.RefundDto"
+	resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT D.EMAIL, D.RNAME, D.RPOSTCODE, D.RADDRESS, D.RADDRESS_DETAIL, D.RPHONE, 
+	D.REQUIRE, D.ORDERDATE, D.STATUS, D.TOTALPRICE, O.ORDERNUMBER, O.QUANTITY, P.SEQ, P.PSIZE, 
+	P.PCOLOR, G.PRODUCTCODE, G.PRODUCTNAME, G.PRICE, G.FILENAME 
+FROM PM_ORDER D, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION P, PM_PRODUCT G
+WHERE D.ORDERNUMBER = O.ORDERNUMBER
+	AND O.PRODUCT_OPTION_SEQ = P.SEQ
+	AND P.PRODUCTCODE = G.PRODUCTCODE
+	AND O.REFUND_SEQ =#{refund_seq }
+</select>
+
+<!-- 월별 매출 통계 -->
+<select id="getMonthlySales" parameterType="com.petmeeting.joy.store.model.SalesDto" resultType="com.petmeeting.joy.store.model.SalesDto">
+WITH TMP_MONTH AS (
+	SELECT '201901' AS MONTH FROM DUAL UNION ALL
+	SELECT '201902' AS MONTH FROM DUAL UNION ALL
+	SELECT '201903' AS MONTH FROM DUAL UNION ALL
+	SELECT '201904' AS MONTH FROM DUAL UNION ALL
+	SELECT '201905' AS MONTH FROM DUAL UNION ALL
+	SELECT '201906' AS MONTH FROM DUAL UNION ALL
+	SELECT '201907' AS MONTH FROM DUAL UNION ALL
+	SELECT '201908' AS MONTH FROM DUAL UNION ALL
+	SELECT '201909' AS MONTH FROM DUAL UNION ALL
+	SELECT '201910' AS MONTH FROM DUAL UNION ALL
+	SELECT '201911' AS MONTH FROM DUAL UNION ALL
+	SELECT '201912' AS MONTH FROM DUAL
+)
+SELECT MONTH, SUM(PRODUCT_TOTAL) AS SALES
+FROM (
+SELECT D.ORDERNUMBER, D.ORDERDATE, TO_CHAR(D.ORDERDATE, 'YYYYMM') AS ORDERDATE_MONTH, D.TOTALPRICE, P.PRODUCTCODE, P.PRODUCTNAME, P.CATEGORY, O.TOTALPRICE AS PRODUCT_TOTAL
+FROM PM_ORDER D, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION PO, PM_PRODUCT P
+WHERE D.ORDERNUMBER = O.ORDERNUMBER
+	AND O.PRODUCT_OPTION_SEQ = PO.SEQ
+	AND PO.PRODUCTCODE = P.PRODUCTCODE
+	AND D.STATUS != 3
+	AND O.STATUS = 0
+	<if test="category != null and category != ''">
+	AND P.CATEGORY = #{category}
+	</if>) A
+RIGHT JOIN (TMP_MONTH)
+ON ORDERDATE_MONTH = MONTH
+GROUP BY MONTH
+ORDER BY MONTH ASC
+</select>
+
+<!-- 오늘의 매출액 -->
+<select id="getTodaySales" resultType="java.lang.Integer">
+WITH TMP_TODAY AS(
+	SELECT TO_CHAR(SYSDATE, 'YYYYMMDD') AS TODAY FROM DUAL
+)
+SELECT NVL(SALES, 0)
+FROM (
+SELECT TO_CHAR(ORDERDATE, 'YYYYMMDD') AS ORDERDATE, SUM(O.TOTALPRICE) AS SALES
+FROM PM_ORDER D, PM_ORDER_DETAIL O
+WHERE D.ORDERNUMBER = O.ORDERNUMBER
+	AND D.STATUS != 3
+	AND O.STATUS = 0
+GROUP BY TO_CHAR(ORDERDATE, 'YYYYMMDD')) A
+RIGHT JOIN TMP_TODAY
+ON ORDERDATE = TODAY
+</select>
+
+<!-- 제품별 매출액 -->
+<select id="getProductSales" resultType="com.petmeeting.joy.store.model.SalesDto">
+SELECT PRODUCTNAME, SUM(PRODUCT_TOTAL) AS SALES
+FROM (
+SELECT D.ORDERNUMBER, D.ORDERDATE, D.TOTALPRICE, P.PRODUCTCODE, P.PRODUCTNAME, P.CATEGORY, O.TOTALPRICE AS PRODUCT_TOTAL
+FROM PM_ORDER D, PM_ORDER_DETAIL O, PM_PRODUCT_OPTION PO, PM_PRODUCT P
+WHERE D.ORDERNUMBER = O.ORDERNUMBER
+	AND O.PRODUCT_OPTION_SEQ = PO.SEQ
+	AND D.STATUS != 3
+	AND O.STATUS = 0
+	AND PO.PRODUCTCODE = P.PRODUCTCODE)
+GROUP BY PRODUCTNAME
+ORDER BY SALES DESC
+</select>
+
+<!-- 반품완료 업데이트 -->
+<update id="updateRefundComplete" parameterType="java.lang.Integer">
+UPDATE PM_ORDER_DETAIL SET STATUS = 3
+WHERE REFUND_SEQ = #{refund_seq}
+</update> 
+
+<!-- 교환완료 업데이트 -->
+<update id="updateChangeComplete" parameterType="java.lang.Integer">
+UPDATE PM_ORDER_DETAIL SET STATUS = 6
+WHERE REFUND_SEQ = #{refund_seq}
+</update> 
+
+<!-- order number로 orderdetail 정보찾기 -->
+<select id="getOrderDetail" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.OrderInfoDto">
+SELECT * FROM PM_ORDER
+WHERE ORDERNUMBER=#{ordernumber}
+</select>
+
+<!-- 오늘의 주문수 -->
+<select id="getTodayOrder" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE SUBSTR(ORDERDATE, 1, 9) = SUBSTR(SYSDATE, 1, 9)
+</select>
+
+<!-- 배송대기 상품 수 -->
+<select id="getDeliveryWait" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE STATUS = 0
+</select>
+
+<!-- 배송중인 상품 수 -->
+<select id="getDeliveryIng" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE STATUS = 1
+</select>
+
+<!-- 취소된 주문 수 -->
+<select id="getCancel" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0) FROM PM_ORDER
+WHERE STATUS = 3
+</select>
+
+<!-- 반품/교환 신청된 주문 수 -->
+<select id="getREreqCount" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0)
+FROM (SELECT R.SEQ
+		FROM PM_REFUND R, PM_ORDER_DETAIL O
+		WHERE R.SEQ = O.REFUND_SEQ
+			AND O.STATUS = #{status}
+		GROUP BY R.SEQ)
+</select>
+
+<update id="updateDeliveryComplete" parameterType="java.lang.String">
+UPDATE PM_ORDER SET STATUS = 2
+WHERE ORDERNUMBER = #{ordernumber}
+</update>
+
+
+</mapper>

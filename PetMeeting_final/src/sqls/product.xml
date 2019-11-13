@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Product">
+
+<insert id="addProduct" parameterType="com.petmeeting.joy.store.model.ProductDto">
+INSERT INTO PM_PRODUCT(PRODUCTCODE, PRODUCTNAME, CATEGORY, PRICE, FILENAME, CONTENT, REGDATE, RECOMMEND)
+VALUES(#{productcode}, #{productname}, #{category}, #{price}, #{filename}, #{content}, SYSDATE, 0)
+</insert>
+
+<!-- 현재 등록된 상품 목록 불러오기 -->
+<select id="getProductList" resultType="com.petmeeting.joy.store.model.ProductDto">
+SELECT PRODUCTCODE, PRODUCTNAME, CATEGORY, PRICE, FILENAME, CONTENT, REGDATE
+FROM PM_PRODUCT
+ORDER BY PRODUCTCODE ASC
+</select>
+
+<!-- 현재 등록된 상품 목록 수량과 함께 불러오기 -->
+<select id="getProductListWithQuantity" parameterType="com.petmeeting.joy.store.model.ProductParam" resultType="com.petmeeting.joy.store.model.ProductDto">
+SELECT PRODUCTCODE, PRODUCTNAME, CATEGORY, PRICE, FILENAME, CONTENT, REGDATE, QUANTITY, RECOMMEND
+FROM (
+SELECT ROW_NUMBER()OVER(ORDER BY 
+	<if test="p_sorting == 'highprice'">
+	PRICE DESC, 
+	</if>
+	<if test="p_sorting == 'lowprice'">
+	PRICE ASC, 
+	</if>
+	REGDATE DESC) AS RNUM, P.PRODUCTCODE, PRODUCTNAME, CATEGORY, PRICE, FILENAME, CONTENT, REGDATE, QUANTITY, RECOMMEND
+FROM PM_PRODUCT P, 
+	(SELECT PRODUCTCODE, SUM(PQUANTITY) AS QUANTITY FROM PM_PRODUCT_OPTION 
+		GROUP BY PRODUCTCODE) Q
+WHERE P.PRODUCTCODE = Q.PRODUCTCODE
+	<if test="p_keyword != null">
+	AND PRODUCTNAME LIKE '%' || #{p_keyword} || '%'
+	</if>
+	<if test="p_sorting_category != null and p_sorting_category != ''">
+	AND CATEGORY = #{p_sorting_category}
+	</if>
+	<if test="p_sorting_soldout == 'soldout'">
+	AND QUANTITY = 0
+	</if>)
+WHERE RNUM BETWEEN #{start} AND #{end}
+</select>
+
+<!-- 상품 갯수 카운트 -->
+<select id="getProductCount" parameterType="com.petmeeting.joy.store.model.ProductParam" resultType="java.lang.Integer">
+
+SELECT NVL(COUNT(*),0)
+FROM PM_PRODUCT P, 
+	(SELECT PRODUCTCODE, SUM(PQUANTITY) AS QUANTITY FROM PM_PRODUCT_OPTION 
+		GROUP BY PRODUCTCODE) Q
+WHERE P.PRODUCTCODE = Q.PRODUCTCODE
+	<if test="p_keyword != null">
+	AND PRODUCTNAME LIKE '%' || #{p_keyword} || '%'
+	</if>
+	<if test="p_sorting_category != null and p_sorting_category != ''">
+	AND CATEGORY = #{p_sorting_category}
+	</if>
+	<if test="p_sorting_soldout == 'soldout'">
+	AND QUANTITY = 0
+	</if>
+</select>
+
+<!-- 상품옵션 등록하기 -->
+<insert id="addProductOption" parameterType="com.petmeeting.joy.store.model.ProductOptionDto">
+INSERT INTO PM_PRODUCT_OPTION(SEQ, PRODUCTCODE, PSIZE, PCOLOR, PQUANTITY)
+VALUES(PM_PRODUCT_OPTION_SEQ.NEXTVAL, #{productcode}, #{psize}, #{pcolor}, #{pquantity})
+</insert>
+
+<!-- 상품 게시글 보기 -->
+<!-- 상품 정보 가져오기 -->
+<select id="getProduct" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.ProductDto">
+SELECT P.PRODUCTCODE, PRODUCTNAME, CATEGORY, PRICE, FILENAME, CONTENT, REGDATE, QUANTITY
+FROM PM_PRODUCT P 
+LEFT JOIN (SELECT PRODUCTCODE, SUM(PQUANTITY) AS QUANTITY FROM PM_PRODUCT_OPTION 
+		GROUP BY PRODUCTCODE) Q
+ON P.PRODUCTCODE = Q.PRODUCTCODE
+WHERE P.PRODUCTCODE = #{pcode}
+</select>
+<!-- 상품 사이즈 옵션 가져오기 -->
+<select id="getProductSize" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT PSIZE
+FROM PM_PRODUCT_OPTION
+WHERE PRODUCTCODE=#{pcode}
+GROUP BY PSIZE
+ORDER BY DECODE(PSIZE, 'S', 1, 'M', 2, 'L', 3, 'XL', 4, 5)
+</select>
+<!-- 상품 컬러 옵션 가져오기 -->
+<select id="getProductColor" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT PCOLOR
+FROM PM_PRODUCT_OPTION
+WHERE PRODUCTCODE=#{pcode}
+GROUP BY PCOLOR
+ORDER BY DECODE(PCOLOR, 'BALCK', 1, 'WHITE', 2, 'RED', 3, 'GREEN', 4, 'BLUE', 5, 'ORANGE', 6, 'PURPLE', 7, 'YEOLLOW', 8, 9)
+</select>
+
+<!-- 상품코드, 사이즈, 컬러 이용해서 상품 옵션 시퀀스 가져오기 -->
+<select id="getProductOptionSeq" parameterType="com.petmeeting.joy.store.model.CartDto" resultType="java.lang.Integer">
+SELECT SEQ FROM PM_PRODUCT_OPTION
+WHERE PRODUCTCODE=#{productcode} AND PSIZE=#{psize} AND PCOLOR=#{pcolor}
+</select>
+
+<!-- 상품코드, 사이즈, 컬러 이용해서 상품 옵션 재고수량 가져오기 -->
+<select id="getProductOptionQuantity" parameterType="com.petmeeting.joy.store.model.ProductOptionDto" resultType="java.lang.Integer">
+SELECT PQUANTITY FROM PM_PRODUCT_OPTION
+WHERE PRODUCTCODE=#{productcode} AND PSIZE=#{psize} AND PCOLOR=#{pcolor}
+</select>
+
+<!-- 상품 코드를 이용하여 전체 재고수량 가져오기 -->
+<select id="getProductQuantity" parameterType="java.lang.String" resultType="java.lang.Integer">
+SELECT SUM(PQUANTITY) AS QUANTITY FROM PM_PRODUCT_OPTION
+GROUP BY PRODUCTCODE
+HAVING PRODUCTCODE = #{pcode}
+</select>
+
+<!-- 상품 코드를 이용하여 상품 옵션 가져오기 -->
+<select id="getProductOption" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.ProductOptionDto">
+SELECT SEQ, PRODUCTCODE, PSIZE, PCOLOR, PQUANTITY
+FROM PM_PRODUCT_OPTION
+WHERE PRODUCTCODE = #{productcode}
+ORDER BY DECODE(PSIZE, 'S', 1, 'M', 2, 'L', 3, 'XL', 4, 5), DECODE(PCOLOR, 'BALCK', 1, 'WHITE', 2, 'RED', 3, 'GREEN', 4, 'BLUE', 5, 'ORANGE', 6, 'PURPLE', 7, 'YEOLLOW', 8, 9)
+</select>
+
+<!-- 상품 재고 업데이트 -->
+<update id="updateProductOption" parameterType="com.petmeeting.joy.store.model.ProductOptionDto">
+UPDATE PM_PRODUCT_OPTION
+SET PQUANTITY = #{pquantity}
+WHERE SEQ = #{seq} 
+</update>
+
+<!-- 상품 수정 -->
+<update id="updateProduct" parameterType="com.petmeeting.joy.store.model.ProductDto">
+UPDATE PM_PRODUCT
+SET PRODUCTNAME=#{productname}, CATEGORY=#{category}, PRICE=#{price}, CONTENT=#{content}
+	<if test="filename != ''">
+		, FILENAME=#{filename}
+	</if>
+WHERE PRODUCTCODE=#{productcode}
+</update>
+
+<!-- 상품옵션 삭제 -->
+<delete id="deleteProductOption" parameterType="java.lang.Integer">
+DELETE FROM PM_PRODUCT_OPTION
+WHERE SEQ=#{seq}
+</delete>
+<!-- 상품 삭제 -->
+<delete id="deleteProduct" parameterType="java.lang.String">
+DELETE FROM PM_PRODUCT
+WHERE PRODUCTCODE=#{productcode}
+</delete>
+
+<!-- 상품코드 중복확인 -->
+<select id="duplicationCheck" parameterType="java.lang.String" resultType="com.petmeeting.joy.store.model.ProductDto">
+SELECT * FROM PM_PRODUCT WHERE PRODUCTCODE=#{productcode}
+</select>
+
+<!-- 상품 추천컬럼 업데이트 -->
+<update id="updateRecommend" parameterType="com.petmeeting.joy.store.model.ProductDto">
+UPDATE PM_PRODUCT
+SET RECOMMEND=#{recommend}
+WHERE PRODUCTCODE=#{productcode}
+</update>
+
+<!-- 추천된 상품갯수 가져오기 -->
+<select id="getRecommendCount" resultType="java.lang.Integer">
+SELECT NVL(COUNT(*), 0)
+FROM PM_PRODUCT
+WHERE RECOMMEND = 1
+</select>
+
+<!-- 추천상품 리스트 가져오기 -->
+<select id="getRecommendProductList" resultType="com.petmeeting.joy.store.model.ProductDto">
+SELECT P.PRODUCTCODE, PRODUCTNAME, CATEGORY, PRICE, FILENAME, CONTENT, REGDATE, QUANTITY, RECOMMEND
+FROM PM_PRODUCT P, 
+	(SELECT PRODUCTCODE, SUM(PQUANTITY) AS QUANTITY FROM PM_PRODUCT_OPTION 
+		GROUP BY PRODUCTCODE) Q
+WHERE P.PRODUCTCODE = Q.PRODUCTCODE
+	AND RECOMMEND = 1
+</select>
+</mapper>

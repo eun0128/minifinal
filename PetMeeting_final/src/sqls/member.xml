@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Member">
+
+<!-- 회원가입 -->
+<insert id="addMember" parameterType="com.petmeeting.joy.login.model.MemberDto">
+INSERT INTO PM_MEMBER(EMAIL, PWD, NICKNAME, NAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH)
+VALUES(#{email}, #{pwd}, #{nickname}, #{name}, #{postcode}, #{address}, #{address_detail}, #{address_refer}, #{phone}, 0, 0, 0, 0, 1)
+</insert>
+
+<!-- 카카오 로그인 유저 회원가입시 프로필이미지저장 -->
+<update id="kakaoProfileImgUpdate" parameterType="com.petmeeting.joy.login.model.KakaoParam">
+UPDATE PM_MYPROFILE
+SET MYPROFILE_IMG=#{myprofile_img}
+WHERE EMAIL=#{email}
+</update>
+
+<!-- 회원가입시 MyProfile 초기저장 (카카오, 일반회원 동일) -->
+<insert id="addSetMyProfile" parameterType="java.lang.String">
+INSERT INTO PM_MYPROFILE(EMAIL, MYPROFILE_IMG, MYAGE, MYSEX, MYINTRO)
+VALUES(#{email}, null, null, null, '등록된 소개가 없습니다')
+</insert>
+
+<!-- 로그인시 회원가입 여부 체크 -->
+<select id="loginCheck" parameterType="com.petmeeting.joy.login.model.MemberDto" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT EMAIL, PWD, NICKNAME, NAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH 
+FROM PM_MEMBER
+WHERE EMAIL=#{email} AND PWD=#{pwd}
+</select>
+
+<!-- 탈퇴회원인지 확인하기 -->
+<select id="leaveMemCheck" parameterType="java.lang.String" resultType="java.lang.Integer"> 
+SELECT COUNT(*) FROM PM_LEAVEMEMBER WHERE EMAIL=#{email}
+</select>
+
+<!-- 카카오 로그인시 가입여부 체크 -->
+<select id="kakaoLoginCheck" parameterType="com.petmeeting.joy.login.model.KakaoParam" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT EMAIL, PWD, NICKNAME, NAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH 
+FROM PM_MEMBER
+WHERE EMAIL=#{email}
+</select>
+
+<!-- user정보 가져오기 -->
+<select id="getUser" parameterType="java.lang.String" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT EMAIL, PWD, NICKNAME, NAME, POSTCODE, ADDRESS, ADDRESS_DETAIL, ADDRESS_REFER, PHONE, TOTALPOINT, POINT, S_POINT, REPORTCOUNT, AUTH 
+FROM PM_MEMBER
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 로그인포인트 지급 유무 체크 -->
+<select id="loginPointCheck" parameterType="com.petmeeting.joy.login.model.LoginParam" resultType="java.lang.Integer">
+SELECT COUNT(*)
+FROM PM_CHECK_LOGIN
+WHERE EMAIL=#{email} AND TO_CHAR( LDATE, 'YYYY-MM-DD' )=#{ldate }
+</select>
+
+<!-- 일별 첫 로그인 입력 -->
+<insert id="setTodayLogin" parameterType="com.petmeeting.joy.login.model.LoginParam">
+INSERT INTO PM_CHECK_LOGIN(SEQ, EMAIL, LDATE)
+VALUES(PM_CHECK_LOGIN_SEQ.NEXTVAL, #{email}, SYSDATE)
+</insert>
+
+<!-- 로그인 포인트추가 -->
+<update id="upPoint" parameterType="com.petmeeting.joy.login.model.LoginParam">
+UPDATE PM_MEMBER
+SET POINT= POINT + #{addpoint }
+WHERE EMAIL=#{email }
+</update>
+
+<!-- 총 포인트추가 -->
+<update id="upTotalPoint" parameterType="com.petmeeting.joy.login.model.LoginParam">
+UPDATE PM_MEMBER
+SET TOTALPOINT = TOTALPOINT + #{addpoint }
+WHERE EMAIL=#{email }
+</update>
+
+<!-- 포인트업데이트시  PM_POINT_HISTORY 추가-->
+<insert id="addPointHistory" parameterType="com.petmeeting.joy.login.model.LoginParam">
+INSERT INTO PM_POINT_HISTORY(EMAIL, USEDINFO, USEPOINT, RESULTPOINT, REGDATE, USEDTYPE) 
+VALUES(#{email }, '출석포인트', #{addpoint }, (SELECT POINT FROM PM_MEMBER WHERE EMAIL=#{email }), SYSDATE, 0)
+</insert>
+
+<!-- 로그인한 유저의 profile 가져오기 -->
+<select id="getLoginUserProfile" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MyProfileDto">
+SELECT EMAIL, MYPROFILE_IMG, MYAGE, MYSEX, MYINTRO
+FROM PM_MYPROFILE
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 펫프로필 가져오기 -->
+<select id="getLoginUserPetProfile" parameterType="java.lang.String" resultType="com.petmeeting.joy.mypage.model.MyPetProfileDto">
+SELECT EMAIL, PETPROFILE_IMG, PETNAME, PETAGE, PETTYPE, PETDETAIL, PETWEIGHT, PETSEX, PETTNR, PETINTRO
+FROM PM_PETPROFILE
+WHERE EMAIL=#{email}
+</select>
+
+<!-- 이메일중복체크 -->
+<select id="checkEmail" parameterType="java.lang.String" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT * 
+FROM PM_MEMBER
+WHERE EMAIL = #{email}
+</select>
+
+<!-- 닉네임중복체크 -->
+<select id="checkNickname" parameterType="java.lang.String" resultType="com.petmeeting.joy.login.model.MemberDto">
+SELECT * 
+FROM PM_MEMBER
+WHERE NICKNAME = #{nickname}
+</select>
+
+<!-- 비밀번호 변경 -->
+<update id="passwordUpdate" parameterType="com.petmeeting.joy.login.model.MemberDto">
+UPDATE PM_MEMBER
+SET PWD = #{pwd }
+WHERE EMAIL=#{email }
+</update>
+
+</mapper>

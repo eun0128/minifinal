@@ -1,0 +1,217 @@
+/* myprofile css*/
+
+@font-face {
+font-family: 'NanumSquareRound'; 
+src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff'); 
+font-weight: normal; 
+font-style: normal; 
+}
+body {
+    font-family:  'NanumSquareRound'!important;
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff'); 
+	font-weight: normal; 
+	font-style: normal; 
+}
+h1, h2, h3, h4, h5, h6{
+	font-family: 'NanumSquareRound'!important; 
+}
+.myprofile-all-container{	
+	background-color:rgb(241,238,235,0.6);
+    padding:30px 0;
+    width:90%;
+    margin:0 auto;
+    margin-bottom: -10px;
+}
+.main-container{
+	margin:10px auto;
+	width:95%;
+}
+.myprofile-container {
+
+    display: inline-block;
+}
+
+.myprofile-container>.mypageHomebox_1>.input_row>.profile_Btn {
+    color: #fff;
+    border: 0px;
+    border-radius: 100px;
+    width: fit-content;
+  	background-color: #2b2b2b;
+    height: auto;
+    padding: 10px 20px 10px 20px;
+    margin-top: 10px;
+    float: right;
+}
+
+
+.mypageHomebox_1 {
+	height: auto;
+    overflow: auto;
+    width: auto;
+    margin-top: 20px;
+}
+
+
+.mypageHomebox_1>.input_row>.profile_Btn {
+    color: #fff;
+    border: 0px;
+    border-radius: 100px;
+    width: fit-content;
+    background-color: #585e7d;
+    height: auto;
+    padding: 10px 20px 10px 20px;
+    float: right;
+}
+
+.nickchange {
+	color: #fff;
+    border: 0px;
+    border-radius: 100px;
+    height: auto;
+    background-color: #a2a2a2;
+    padding: 2px 13px;
+}
+
+.nickChgMsg {
+	margin-left: 105px;
+}
+
+.ectpetinput {
+	float: right;
+} 
+
+.mypageHomebox_1>.input_row {
+/*	background-color: #f3f3f3;
+    border: 1px solid blue; */
+    height: auto;
+    width: 100%;
+    /* padding: 20px; */
+    float: left;
+    
+}
+
+.mypageHomebox_1>.input_row>.input_title {
+	font-family: 'NanumSquareRound'; 
+	src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff'); 
+    font-size: 20px;
+    color: #495057;
+    font-weight:1000;
+    width: fit-content;   
+    border: 0;
+    margin: 0px;
+    margin-right: 20px;
+    float: inherit;
+}
+
+.mypageHomebox_1>.input_row>.input_content {
+	float: left;
+	margin-top: 32px;
+
+}
+
+
+
+.mypageHomebox_1>.input_row>.input_content>.img_preView {
+    object-fit: cover;
+    width: 250px;
+    height: 250px;
+    border: 2px #6161617a;
+    border-radius: 100%;
+    border-style: dotted;
+}
+
+
+.mypageHomebox_1>.input_row> span> input{
+    border-radius: 5px;
+	border: solid 1px #d6dade;
+	padding-left: 10px;
+}
+
+.mypageHomebox_1>.input_row> textarea{
+    resize: none;
+    padding: 10px;
+    border-radius: 10px;
+    border-style: none;
+    height: 200px;
+    width: 90%;
+    margin-top: 20px;   
+}
+.mypageHomebox_1>.input_row>.resizechkBox {
+
+    height: 15px;
+    width: 15px;
+}
+
+
+
+
+
+
+
+
+/* The myProfile_modal (background) */
+.myProfile_modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* myProfile_modal Content/Box */
+.myProfile_modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%; /* Could be more or less, depending on screen size */                          
+}
+
+/* The myProfile_modalclose Button */
+.myProfile_modalclose {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.myProfile_modalclose:hover,
+.myProfile_modalclose:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* 바디에 스크롤 막는 방법 */
+.not_scroll{
+    position: fixed;
+    overflow: hidden;
+    width: 100%;
+    height: 100%
+}
+.not_scroll .cont {
+    position: relative;
+    top: 0;
+}
+
+.displayis {
+	display: none;
+}
+.right-content{
+	float:left;
+}
+.left-content{
+	padding-left:30px;
+}
+.input-icon{
+	width:30px;
+	height:19px;
+}
+.mypageHomebox_1.below-img{
+	margin-right:30px;
+	display:inline-block;
+}
